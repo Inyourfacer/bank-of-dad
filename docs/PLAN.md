@@ -21,12 +21,14 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
 
 **Done when:** anyone can open the site and play with the simulator.
 
-## Phase 2: Data, logins, parent admin
+## Phase 2: Data, logins, parent admin ✅
 - Supabase schema, Row Level Security policies and migrations checked into
   `supabase/`.
 - Parent email login and the family device login.
 - Parent dashboard: add the 5 kids, set modes and PINs, record deposits, edit
   rate schedules, and view each ledger.
+- Demo mode (in-memory, no Supabase) to try everything before setup.
+- Setup guide: [SETUP.md](SETUP.md).
 
 **Done when:** a parent can set up all 5 accounts and record deposits.
 

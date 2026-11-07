@@ -71,3 +71,17 @@ export function todayISO(now: Date = new Date()): ISODate {
   const d = String(now.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+/** Today's date in an IANA time zone (falls back to local time if unknown). */
+export function todayInZone(timeZone: string, now: Date = new Date()): ISODate {
+  try {
+    // en-CA formats as YYYY-MM-DD.
+    return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+  } catch {
+    return todayISO(now);
+  }
+}
+
+export function startOfMonth(d: ISODate): ISODate {
+  return `${d.slice(0, 7)}-01`;
+}

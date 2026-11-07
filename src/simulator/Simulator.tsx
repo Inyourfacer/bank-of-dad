@@ -1,4 +1,5 @@
 import { useId, useMemo, useState } from "react";
+import { Field } from "../components/Field";
 import { annualFromMonthlyRate } from "../engine/interest";
 import type { Frequency } from "../engine/projection";
 import {
@@ -57,49 +58,6 @@ function toSettings(f: Form): SimSettings {
     recurringFrequency: f.recurringFrequency,
     bankApy: Math.min(percentToFraction(f.bankApy), 0.5),
   };
-}
-
-function Field({
-  label,
-  hint,
-  prefix,
-  suffix,
-  value,
-  onChange,
-  inputMode = "decimal",
-}: {
-  label: string;
-  hint?: string;
-  prefix?: string;
-  suffix?: string;
-  value: string;
-  onChange: (v: string) => void;
-  inputMode?: "decimal" | "numeric";
-}) {
-  const id = useId();
-  return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <div className="input-wrap">
-        {prefix && <span className="affix">{prefix}</span>}
-        <input
-          id={id}
-          type="text"
-          inputMode={inputMode}
-          value={value}
-          placeholder="0"
-          onChange={(e) => onChange(e.target.value)}
-          aria-describedby={hint ? `${id}-hint` : undefined}
-        />
-        {suffix && <span className="affix">{suffix}</span>}
-      </div>
-      {hint && (
-        <p className="hint" id={`${id}-hint`}>
-          {hint}
-        </p>
-      )}
-    </div>
-  );
 }
 
 export function Simulator() {

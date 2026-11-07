@@ -21,7 +21,7 @@ It has two uses:
 
 | Who | Count | How they sign in | Can do |
 |---|---|---|---|
-| Parents | 2 | Their own email login (magic link) on their own devices | Everything: manage kids, deposits, rates, approve withdrawals |
+| Parents | 2 | Their own email login (6-digit code or link, no password) on their own devices | Everything: manage kids, deposits, rates, approve withdrawals |
 | Kids | 5 | Profile picker + 4-digit PIN on a signed-in device | View own account, run what-ifs, **request** withdrawals |
 | Anyone | — | No login | Simulator only |
 
@@ -250,8 +250,20 @@ computes the previous month's interest for every account and inserts a Payday
 transaction. Each Payday is unique per `(account, month)`, so a re-run never
 double-pays. If a run is missed, the next run catches up on every unpaid month.
 
-The app also shows accrued-but-unposted interest, so a late job never shows
-wrong numbers.
+**Interest is always derived.** The app computes balances and Paydays from the
+ledger and rate schedule with the interest engine. Posted Payday rows are a
+record of what was paid, not an input, so a late or missed job never shows
+wrong numbers. Two database rules keep past months from changing underneath
+the posted record:
+
+- Once an account is open, ledger entries can only be added or removed **in
+  the current month**. Earlier months' Paydays are final; fix mistakes with a
+  correction (an adjustment) this month.
+- Rate changes can only take effect **today or later**, and rates already in
+  effect can't be removed.
+
+Before an account opens there's no interest, so parents can backfill entries
+with any past date.
 
 ### 9.3 Keep-alive
 
@@ -262,33 +274,47 @@ pings the database every 3 days to prevent that.
 
 - **Parent accounts:** full read and write access to the family's data.
 - **Family device account:** a shared login used on the kids' devices. Row
-  Level Security lets it **read** family data and **create withdrawal
-  requests only**. It cannot record deposits, approve requests or change rates,
-  even if someone pokes at the API directly.
+  Level Security lets it **read** family data, check kid PINs, open a kid's
+  account on first login and, from Phase 3, **create withdrawal requests**.
+  It cannot record deposits, approve requests or change rates, even if someone
+  pokes at the API directly.
+- **No parent PIN.** Parents manage money only from their own logins, so the
+  shared device never holds parent powers.
 - **Kid PINs** pick which profile is shown on a family device. They're a
   convenience, not a hard security boundary between siblings. PINs are stored
-  hashed.
+  bcrypt-hashed in a table no client can read; five wrong guesses lock that
+  profile for a minute.
+- **Sign-ups are disabled.** Parents create logins in the Supabase dashboard
+  and then add them to the family in the app.
+- Every rule above is covered by SQL tests (`supabase/tests/`) that run in CI.
 - The Supabase service key lives only in GitHub Actions secrets, never in the
   frontend.
 
-## 10. Data model (draft)
+## 10. Data model
+
+The source of truth is `supabase/migrations/`. In summary:
 
 ```
-family        (id, name)
-parent        (user_id → auth.users, family_id, display_name)
-kid           (id, family_id, name, avatar, mode[junior|standard],
-               pin_hash, account_opened_on)
-rate_period   (id, kid_id, effective_from date, monthly_rate numeric)
-transaction   (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
-               amount_cents int, occurred_on date, note,
-               period_month date null,  -- set for interest; unique(kid_id, period_month)
+families      (id, name, time_zone, regular_bank_apy,
+               cd_bonus_monthly_rate, loan_monthly_rate)
+members       (user_id → auth.users, family_id, role[parent|device], display_name)
+kids          (id, family_id, name, avatar, mode[junior|standard],
+               intro_monthly_rate, intro_months, ongoing_monthly_rate,  -- rate template
+               account_opened_on null)                                  -- set on first login
+kid_pins      (kid_id, pin_hash, failed_attempts, locked_until)         -- functions only
+rate_periods  (id, kid_id, effective_from, monthly_rate)                -- created on open
+transactions  (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
+               amount_cents, occurred_on, note,
+               period_month null,  -- interest only; unique(kid_id, period_month)
                created_by, created_at)
-withdrawal_request
-              (id, kid_id, amount_cents, reason,
-               status[pending|approved|denied], decided_by, decided_at,
-               transaction_id null, created_at)
-interest_carry(kid_id, period_month, remainder numeric)  -- rounding remainder
+withdrawal_requests (Phase 3)
 ```
+
+Functions: `create_family`, `add_family_member`, `remove_family_member`,
+`set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`.
+
+Paydays are a pure function of the ledger and rates, so the rounding remainder
+doesn't need its own table.
 
 All money is stored as **integer cents**.
 
