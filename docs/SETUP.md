@@ -32,19 +32,79 @@ You'll end up with:
 This creates the tables, the security rules that keep each family's data
 private, and the functions for PINs and opening accounts.
 
-## 3. Lock down sign-in
+## 3. Set up sign-in
 
-In **Authentication**:
+Step 3 has three parts, all on the **Authentication** page of your Supabase
+project. To get there, open your project at
+[supabase.com/dashboard](https://supabase.com/dashboard) and click
+**Authentication** in the left sidebar (the icon looks like a person). A
+second menu appears beside it; the parts below use that menu.
 
-1. **Sign In / Providers**: turn **off** "Allow new users to sign up". Only
-   people you add can sign in. Leave the **Email** provider on.
-2. **URL Configuration**:
-   - **Site URL**: `https://inyourfacer.github.io/bank-of-dad/`
-   - **Redirect URLs**: add `https://inyourfacer.github.io/bank-of-dad/` and,
-     for local development, `http://localhost:5173/bank-of-dad/`.
-3. **Emails → Magic Link**: so the email contains a typeable code as well as a
-   link (handy when the app is installed on a phone's home screen), replace the
-   body with:
+> Supabase sometimes renames these menu items. If a name below doesn't match
+> exactly, look for the closest one: the settings themselves haven't changed.
+
+### 3a. Turn off public sign-ups
+
+**Why:** so only the people you add in step 4 can ever sign in. Strangers who
+find the website can't create an account.
+
+1. In the Authentication menu, under **Configuration**, click
+   **Sign In / Providers**. (Older dashboards: **Providers**.)
+2. Near the top, find the **User Signups** section and the switch
+   **Allow new users to sign up**.
+   - Don't see it? Scroll down to **Email** in the provider list, click it to
+     expand, and look there for **Enable sign ups** or **Allow new users to
+     sign up**.
+3. Turn that switch **off**.
+4. Leave the **Email** provider itself **on** (enabled). Parents sign in with
+   emailed codes, so turning it off would lock everyone out.
+5. Click **Save changes** (the button may be at the bottom of the section).
+
+**Check:** the switch shows as off after you reload the page.
+
+### 3b. Tell Supabase where the website lives
+
+**Why:** sign-in emails contain a link back to the app. Supabase only sends
+people to addresses you've approved.
+
+1. In the Authentication menu, under **Configuration**, click
+   **URL Configuration**.
+2. **Site URL:** replace whatever is there (often `http://localhost:3000`) with
+   the address below, then click **Save**:
+
+   ```
+   https://inyourfacer.github.io/bank-of-dad/
+   ```
+
+3. **Redirect URLs:** click **Add URL**, paste the same address, and save. If
+   you plan to run the app on your own computer for development, also add:
+
+   ```
+   http://localhost:5173/bank-of-dad/
+   ```
+
+**Check:** the Site URL box shows the GitHub address, and the Redirect URLs
+list has one or two entries.
+
+### 3c. Put the sign-in code in the email
+
+**Why:** by default Supabase's email only has a link. A typeable 6-digit code
+is easier when the app is installed on a phone's home screen, because tapping
+the link opens a separate browser instead of the app.
+
+1. In the Authentication menu, click **Emails**. (Older dashboards: **Email
+   Templates**, under **Configuration**.)
+2. At the top you'll see tabs or a list of templates: *Confirm signup*,
+   *Invite user*, **Magic Link**, *Change email address*, … Click
+   **Magic Link**.
+3. **Subject:** change it to:
+
+   ```
+   Your Bank of Dad sign-in code
+   ```
+
+4. **Body** (it may be labelled *Message body* and have a *Source* / *Preview*
+   toggle; use *Source*): delete everything in it and paste:
 
    ```html
    <h2>Your Bank of Dad sign-in code</h2>
@@ -52,9 +112,17 @@ In **Authentication**:
    <p>Or <a href="{{ .ConfirmationURL }}">tap here to sign in</a>.</p>
    ```
 
-> Supabase's built-in email sender only allows a few emails an hour. That's
-> plenty for a family. If you ever hit the limit, wait an hour or connect your
-> own SMTP under **Authentication → Emails → SMTP Settings**.
+   Keep the double curly braces exactly as written. Supabase swaps
+   `{{ .Token }}` for the code and `{{ .ConfirmationURL }}` for the link.
+5. Click **Save changes**.
+
+**Check:** switch to *Preview*. You should see the heading, a placeholder
+where the code goes, and the "tap here" link. The real test comes in step 6,
+when your sign-in email shows a 6-digit number.
+
+> **Email limits:** Supabase's built-in email sender only sends a few emails
+> an hour. That's plenty for a family. If you hit the limit, wait an hour, or
+> connect your own email account under **Emails → SMTP Settings**.
 
 ## 4. Create the logins
 
@@ -91,6 +159,11 @@ In **Authentication → Users → Add user → Create new user**:
 5. Open each kid and **set a 4-digit PIN**.
 6. Record any money each kid already has. Until a kid's first login you can
    date entries in the past; interest starts on the first login.
+
+**Check the lockdown:** sign out, choose **Family → Parent**, and enter an
+email that isn't one of your logins. The app should say *"That email isn't
+set up for the Bank of Dad"* and no email should arrive. If a code arrives
+instead, public sign-ups are still on: redo step 3a.
 
 On the kids' device: **Family → Family device**, then sign in with the device
 email and password. (Kid profiles with PIN sign-in arrive in Phase 3.)
