@@ -15,6 +15,8 @@ export interface BankApi {
   sendEmailCode(email: string): Promise<void>;
   verifyEmailCode(email: string, code: string): Promise<void>;
   signInWithPassword(email: string, password: string): Promise<void>;
+  /** Changes the signed-in user's own password. */
+  changePassword(newPassword: string): Promise<void>;
   signOut(): Promise<void>;
 
   /** null when the signed-in user doesn't belong to a family yet. */

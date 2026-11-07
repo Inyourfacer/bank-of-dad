@@ -166,6 +166,9 @@ export function createDemoApi(): DemoApi {
     async signInWithPassword() {
       await api.signInAs("device");
     },
+    async changePassword(newPassword) {
+      if (newPassword.length < 8) throw new ApiError("Use at least 8 characters.");
+    },
     async signOut() {
       db.user = null;
       changed();

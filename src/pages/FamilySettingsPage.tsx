@@ -18,6 +18,7 @@ export function FamilySettingsPage() {
       <h1 className="page-title">Family settings</h1>
       <BankSettings key={JSON.stringify(data.family)} />
       <Members />
+      <ChangePassword />
     </div>
   );
 }
@@ -154,6 +155,45 @@ function Members() {
         </button>
       </form>
     </section>
+  );
+}
+
+function ChangePassword() {
+  const [run, busy, error] = useAction();
+  const [pw, setPw] = useState("");
+  const [again, setAgain] = useState("");
+  const [saved, setSaved] = useState(false);
+  const mismatch = again.length > 0 && pw !== again;
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setSaved(false);
+    if (await run((api) => api.changePassword(pw))) {
+      setPw("");
+      setAgain("");
+      setSaved(true);
+    }
+  };
+
+  return (
+    <form className="panel stack" onSubmit={submit} aria-labelledby="pw-title">
+      <h2 className="panel-title" id="pw-title">
+        Your password
+      </h2>
+      <p className="hint">Replace the starting password from setup with one only you know.</p>
+      <div className="row">
+        <Field label="New password" type="password" autoComplete="new-password" value={pw} onChange={setPw} hint="At least 8 characters." />
+        <Field label="Type it again" type="password" autoComplete="new-password" value={again} onChange={setAgain} />
+      </div>
+      {mismatch && <p className="error-msg">The passwords don't match.</p>}
+      <ErrorMessage error={error} />
+      <div className="actions">
+        <button className="btn btn-secondary" disabled={busy || pw.length < 8 || pw !== again}>
+          Change password
+        </button>
+        {saved && <span className="saved">Password changed ✓</span>}
+      </div>
+    </form>
   );
 }
 

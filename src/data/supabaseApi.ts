@@ -50,7 +50,9 @@ export function createSupabaseApi(): BankApi {
         throw new ApiError(
           /signups not allowed|not found/i.test(error.message)
             ? "That email isn't set up for the Bank of Dad. Ask a parent to add you."
-            : error.message,
+            : /not authorized/i.test(error.message)
+              ? "Email sign-in isn't set up yet (see docs/SETUP.md, step 3c). Use your password instead."
+              : error.message,
         );
       }
     },
@@ -63,6 +65,11 @@ export function createSupabaseApi(): BankApi {
     async signInWithPassword(email, password) {
       const { error } = await db.auth.signInWithPassword({ email, password });
       if (error) throw new ApiError("Wrong email or password.");
+    },
+
+    async changePassword(newPassword) {
+      const { error } = await db.auth.updateUser({ password: newPassword });
+      if (error) throw new ApiError(error.message);
     },
 
     async signOut() {

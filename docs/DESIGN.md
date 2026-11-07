@@ -21,7 +21,7 @@ It has two uses:
 
 | Who | Count | How they sign in | Can do |
 |---|---|---|---|
-| Parents | 2 | Their own email login (6-digit code or link, no password) on their own devices | Everything: manage kids, deposits, rates, approve withdrawals |
+| Parents | 2 | Their own email + password on their own devices (emailed codes optional, need custom SMTP) | Everything: manage kids, deposits, rates, approve withdrawals |
 | Kids | 5 | Profile picker + 4-digit PIN on a signed-in device | View own account, run what-ifs, **request** withdrawals |
 | Anyone | — | No login | Simulator only |
 
@@ -333,3 +333,4 @@ All money is stored as **integer cents**.
 | CD bonus | +1%/month, configurable |
 | Notifications | In-app badge only |
 | Hosting | Free: GitHub Pages + Supabase + GitHub Actions |
+| Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |
