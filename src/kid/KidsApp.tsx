@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { pinMessage } from "../data/api";
 import { useApp } from "../data/AppContext";
+import { demoPinFor } from "../data/demoPin";
 import type { Kid } from "../data/types";
 import { JuniorHome } from "./JuniorHome";
 import { KidHome } from "./KidHome";
@@ -43,6 +44,7 @@ function KidPicker() {
           </div>
           <PinPad
             title={`Hi, ${picked.name}!`}
+            hint={demoPinFor(api, picked.id) && `Demo PIN: ${demoPinFor(api, picked.id)}`}
             message={message}
             busy={busy}
             onCancel={() => {
@@ -91,6 +93,7 @@ function KidPicker() {
                   {k.avatar}
                 </span>
                 <span className="profile-name">{k.name}</span>
+                {demoPinFor(api, k.id) && <span className="demo-pin">PIN {demoPinFor(api, k.id)}</span>}
               </button>
             </li>
           ))}

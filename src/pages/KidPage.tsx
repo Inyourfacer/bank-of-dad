@@ -5,6 +5,7 @@ import { KidForm } from "../components/KidForm";
 import { RequestReview } from "../components/RequestReview";
 import type { KidAccount } from "../data/account";
 import { useAction, useApp } from "../data/AppContext";
+import { demoPinFor } from "../data/demoPin";
 import type { Kid, NewTransaction, RatePeriodRow } from "../data/types";
 import { useAccounts } from "../data/useAccounts";
 import { addDays, firstOfNextMonth, startOfMonth } from "../engine/dates";
@@ -347,6 +348,7 @@ function RatesPanel({ kid, rates }: { kid: Kid; rates: RatePeriodRow[] }) {
 }
 
 function ProfilePanel({ kid, hasPin }: { kid: Kid; hasPin: boolean }) {
+  const { api } = useApp();
   const [run, busy, error] = useAction();
   const [pinRun, pinBusy, pinError] = useAction();
   const [saved, setSaved] = useState(false);
@@ -388,7 +390,11 @@ function ProfilePanel({ kid, hasPin }: { kid: Kid; hasPin: boolean }) {
           value={pin}
           onChange={(v) => (setPin(v.replace(/\D/g, "").slice(0, 4)), setPinSaved(false))}
           maxLength={4}
-          hint={`${kid.name} enters this on the family device.`}
+          hint={
+            demoPinFor(api, kid.id)
+              ? `${kid.name}'s demo PIN is ${demoPinFor(api, kid.id)}.`
+              : `${kid.name} enters this on the family device.`
+          }
         />
         <ErrorMessage error={pinError} />
         <div className="actions">
