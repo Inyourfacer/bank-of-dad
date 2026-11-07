@@ -1058,3 +1058,279 @@ tr.current td {
   padding: 0 10px;
   font-size: 0.8rem;
 }
+
+/* ---------- Kid screens ---------- */
+.section-title {
+  font-size: 1.2rem;
+}
+.big-emoji {
+  font-size: 2.2rem;
+  margin: 0;
+  line-height: 1;
+}
+.kid-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.kid-bar .page-title {
+  flex: 1;
+  min-width: 0;
+}
+.welcome {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--series-interest) 14%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--series-interest) 40%, var(--border));
+}
+.welcome > div {
+  flex: 1;
+  min-width: 200px;
+}
+.welcome p {
+  margin: 4px 0 0;
+}
+.payday-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+}
+.hero .actions {
+  margin-top: 16px;
+}
+.profile-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+  max-width: 760px;
+  justify-self: center;
+  width: 100%;
+}
+.profile {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 20px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.profile:hover {
+  border-color: var(--focus);
+  transform: translateY(-2px);
+}
+.profile-name {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+.pinpad {
+  justify-items: center;
+}
+.pin-dots {
+  display: flex;
+  gap: 14px;
+}
+.pin-dots span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid var(--text-secondary);
+}
+.pin-dots span.on {
+  background: var(--series-putin);
+  border-color: var(--series-putin);
+}
+.pin-msg {
+  min-height: 1.4em;
+  margin: 0;
+}
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  gap: 12px;
+}
+.keypad button {
+  height: 64px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.keypad button:active {
+  background: var(--border);
+}
+.reality-check {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--series-interest) 10%, var(--surface));
+  border: 1px dashed color-mix(in srgb, var(--series-interest) 55%, var(--border));
+}
+.reality-check p {
+  margin: 0;
+}
+.reality-title {
+  font-weight: 700;
+  margin-bottom: 4px !important;
+}
+.reality-figures {
+  display: flex;
+  gap: 24px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+.reality-figures > div {
+  display: grid;
+}
+.reality-number {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--good-ink);
+}
+.quick-amounts {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.quick-amounts .btn.on {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 2px var(--focus);
+}
+.whatif-result {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.whatif-result p {
+  margin: 0;
+}
+.whatif-result .muted {
+  margin-top: 4px;
+}
+
+/* Junior */
+.junior-hero {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 560px) {
+  .junior-hero {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+}
+.junior-number {
+  font-size: clamp(2.8rem, 10vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+}
+.junior .cheer {
+  font-size: 1.1rem;
+  margin: 0;
+}
+.jar {
+  margin: 0;
+  width: 100%;
+  max-width: 200px;
+  display: grid;
+  gap: 4px;
+}
+.wait-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.wait-cards li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.wait-number {
+  font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+  font-weight: 750;
+  color: var(--good-ink);
+}
+
+/* Parent: requests */
+.attention {
+  border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+}
+.count,
+.nav-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #3b2a00;
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.nav-count {
+  margin-left: 6px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 0.7rem;
+}
+.request-row {
+  flex-wrap: wrap;
+}
+.request-actions {
+  display: flex;
+  gap: 8px;
+}
+.list-row.request-row > .avatar {
+  flex: 0 0 40px;
+}
+.request-row > .activity-main {
+  flex: 1;
+  min-width: 0;
+}
+table.forecast tfoot th,
+table.forecast tfoot td {
+  font-weight: 650;
+  border-bottom: 0;
+}
+table.forecast tfoot tr:first-child th,
+table.forecast tfoot tr:first-child td {
+  border-top: 2px solid var(--border);
+}
+tr.forecast-interest th,
+tr.forecast-interest td {
+  color: var(--good-ink);
+  font-weight: 500;
+  padding-top: 0;
+}
+table td,
+table th {
+  font-variant-numeric: tabular-nums;
+}

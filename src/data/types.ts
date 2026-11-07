@@ -50,6 +50,26 @@ export interface TransactionRow {
   created_at: string;
 }
 
+export type RequestStatus = "pending" | "approved" | "denied" | "cancelled";
+
+export interface WithdrawalRequest {
+  id: string;
+  kid_id: string;
+  amount_cents: number;
+  reason: string | null;
+  status: RequestStatus;
+  decided_at: string | null;
+  created_at: string;
+}
+
+/** Result of a PIN check on the family device. */
+export type PinStatus = "ok" | "wrong" | "locked" | "no_pin";
+
+export interface KidSignInResult {
+  status: PinStatus;
+  firstLogin: boolean;
+}
+
 /** Everything a signed-in family member can see. */
 export interface FamilyData {
   me: Member;
@@ -58,6 +78,7 @@ export interface FamilyData {
   kids: Kid[];
   rates: RatePeriodRow[];
   transactions: TransactionRow[];
+  withdrawalRequests: WithdrawalRequest[];
   kidsWithPin: string[];
 }
 

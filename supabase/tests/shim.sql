@@ -19,3 +19,10 @@ grant execute on function auth.uid() to anon, authenticated, service_role;
 create schema extensions;
 grant usage on schema extensions to anon, authenticated, service_role;
 grant usage on schema public to anon, authenticated, service_role;
+
+-- Supabase grants everything in `public` to its API roles by default; the
+-- migrations must revoke what they don't want exposed. Mirror that here so
+-- the tests catch a missing revoke.
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;

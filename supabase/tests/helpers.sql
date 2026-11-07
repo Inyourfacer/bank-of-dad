@@ -1,5 +1,5 @@
 create schema tests;
-grant usage on schema tests to anon, authenticated;
+grant usage on schema tests to anon, authenticated, service_role;
 
 create function tests.ok(cond boolean, label text) returns void language plpgsql as $$
 begin
@@ -28,4 +28,4 @@ begin
   return n;
 end $$;
 
-grant execute on all functions in schema tests to anon, authenticated;
+grant execute on all functions in schema tests to anon, authenticated, service_role;

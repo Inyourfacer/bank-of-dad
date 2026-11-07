@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { KidForm } from "../components/KidForm";
+import { LiabilityForecast } from "../components/LiabilityForecast";
+import { RequestReview } from "../components/RequestReview";
 import { useAction, useApp } from "../data/AppContext";
 import { useAccounts } from "../data/useAccounts";
 import { formatCents, formatMonthYear } from "../lib/format";
@@ -51,6 +53,8 @@ export function FamilyPage() {
           <p className="hint">money the kids didn't have to earn</p>
         </div>
       </div>
+
+      <RequestReview requests={data.withdrawalRequests} />
 
       {missingPin.length > 0 && (
         <p className="notice" role="status">
@@ -105,6 +109,9 @@ export function FamilyPage() {
                       ) : (
                         <span className="chip">Opens at first login</span>
                       )}
+                      {data.withdrawalRequests.some((r) => r.kid_id === k.id && r.status === "pending") && (
+                        <span className="chip chip-warn">Request waiting</span>
+                      )}
                     </span>
                     <span className="kid-meta">
                       {k.account_opened_on ? `Since ${formatMonthYear(k.account_opened_on)}` : k.mode === "junior" ? "Junior" : "Standard"}
@@ -116,6 +123,8 @@ export function FamilyPage() {
           </ul>
         )}
       </section>
+
+      <LiabilityForecast />
     </div>
   );
 }

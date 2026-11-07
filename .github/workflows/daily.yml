@@ -1,0 +1,35 @@
+name: Daily bank jobs
+
+# Posts Paydays that are due and keeps the free Supabase project awake.
+# Safe to run any number of times: a month is only ever posted once.
+on:
+  schedule:
+    - cron: "23 10 * * *" # every day, 10:23 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only show what would be posted"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-bank-jobs
+  cancel-in-progress: false
+
+jobs:
+  payday:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/daily.ts ${{ inputs.dry_run && '--dry-run' || '' }}
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

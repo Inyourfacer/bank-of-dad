@@ -245,10 +245,13 @@ schedule, the numbers can always be recomputed and audited.
 
 ### 9.2 Payday posting
 
-A GitHub Actions job runs on the 1st of each month (and can be run by hand). It
-computes the previous month's interest for every account and inserts a Payday
-transaction. Each Payday is unique per `(account, month)`, so a re-run never
-double-pays. If a run is missed, the next run catches up on every unpaid month.
+A GitHub Actions job (`.github/workflows/daily.yml`, `scripts/daily.ts`) runs
+every day. For each open account it inserts a Payday transaction for every
+month that has **ended in the family's time zone** and isn't posted yet, so a
+missed run catches up on the next one. Each Payday is unique per
+`(account, month)`, so a re-run never double-pays. It also reports any posted
+amount that no longer matches the ledger. The planning logic (`planPaydays`)
+is a pure, unit-tested function built on the interest engine.
 
 **Interest is always derived.** The app computes balances and Paydays from the
 ledger and rate schedule with the interest engine. Posted Payday rows are a
@@ -267,8 +270,8 @@ with any past date.
 
 ### 9.3 Keep-alive
 
-Supabase pauses free projects after about a week of inactivity. A GitHub Action
-pings the database every 3 days to prevent that.
+Supabase pauses free projects after about a week of inactivity. The daily
+Payday job reads the database every day, which keeps it awake.
 
 ### 9.4 Security model
 
@@ -307,11 +310,16 @@ transactions  (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
                amount_cents, occurred_on, note,
                period_month null,  -- interest only; unique(kid_id, period_month)
                created_by, created_at)
-withdrawal_requests (Phase 3)
+withdrawal_requests (id, kid_id, amount_cents, reason,
+               status[pending|approved|denied|cancelled], decided_by, decided_at,
+               transaction_id)  -- functions only
 ```
 
 Functions: `create_family`, `add_family_member`, `remove_family_member`,
-`set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`.
+`set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`,
+`kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`.
+Every kid action re-checks that kid's PIN on the server, so a sibling holding
+the family device can't act for someone else.
 
 Paydays are a pure function of the ledger and rates, so the rounding remainder
 doesn't need its own table.
@@ -328,9 +336,13 @@ All money is stored as **integer cents**.
 | Withdrawals | Anytime, by request; a parent approves |
 | Kid logins | Profile picker + 4-digit PIN |
 | Open date | The kid's first login (confirmed). Deposits made earlier earn nothing until then |
+| Kid sessions | Signed out after 5 minutes idle on the shared device |
+| Pending withdrawals | Hold the money: a kid can ask for at most their balance minus pending requests |
+| Junior mode | Simple version in Phase 3 (jar, big number, "if you wait"); full visuals in Phase 5 |
 | Rate display | Bank of Dad and regular-bank rates shown both per month and per year |
 | Loan rate | 3%/month |
 | CD bonus | +1%/month, configurable |
 | Notifications | In-app badge only |
 | Hosting | Free: GitHub Pages + Supabase + GitHub Actions |
+| Paydays | Posted by one daily GitHub job, which also keeps Supabase awake |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |

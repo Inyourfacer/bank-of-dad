@@ -32,17 +32,20 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
 
 **Done when:** a parent can set up all 5 accounts and record deposits.
 
-## Phase 3: Kid view + withdrawals
+## Phase 3: Kid view + withdrawals ✅
 - Profile picker + PIN. The first login sets the account's open date.
 - Kid home (balance, lifetime interest, Payday countdown, earned this month),
   growth chart, what-if panel with extra deposits, and the activity list.
 - Withdrawal request flow with the reality check, plus parent approval and a pending badge.
 
+- Kids are signed out after 5 minutes idle; pending requests hold the money;
+  Junior mode (jar, big number, "if you wait…") ships in a simple form.
+
 **Done when:** kids use it day to day.
 
-## Phase 4: Automation
-- Monthly Payday Action (idempotent, catches up on missed months).
-- Keep-alive Action every 3 days.
+## Phase 4: Automation ✅
+- Daily Payday Action (idempotent, family time zone, catches up on missed
+  months); the same daily run keeps Supabase awake.
 - Parent liability forecast.
 
 **Done when:** interest posts itself on the 1st with no one touching anything.
