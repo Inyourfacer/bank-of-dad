@@ -4,7 +4,11 @@ import { createSupabaseApi, supabaseConfigured } from "./supabaseApi";
 
 const MODE_KEY = "bank-of-dad-mode";
 
+/** Build flag for previews: always run the demo, with no way to leave it. */
+export const demoOnly = import.meta.env.VITE_DEMO_ONLY === "true";
+
 export function isDemoMode(): boolean {
+  if (demoOnly) return true;
   try {
     return sessionStorage.getItem(MODE_KEY) === "demo";
   } catch {

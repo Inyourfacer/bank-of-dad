@@ -1047,3 +1047,14 @@ tr.current td {
 .narrow .stack > .btn {
   justify-self: stretch;
 }
+
+.confirm-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-sm {
+  min-height: 30px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+}

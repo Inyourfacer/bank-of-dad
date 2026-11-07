@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AppProvider, useApp } from "./data/AppContext";
-import { enterDemo, exitDemo } from "./data/backend";
+import { demoOnly, enterDemo, exitDemo } from "./data/backend";
 import { match, navigate, useRoute } from "./lib/router";
 import { DevicePage } from "./pages/DevicePage";
 import { FamilyPage } from "./pages/FamilyPage";
@@ -43,11 +43,14 @@ function Shell() {
             <a href="#/family" aria-current={!onSimulator ? "page" : undefined}>
               {data?.me.role === "device" ? "Kids" : "Family"}
             </a>
-            {api?.kind === "demo" && (
-              <button type="button" className="badge" onClick={exitDemo} title="Leave the demo">
-                Demo · exit
-              </button>
-            )}
+            {api?.kind === "demo" &&
+              (demoOnly ? (
+                <span className="badge">Demo</span>
+              ) : (
+                <button type="button" className="badge" onClick={exitDemo} title="Leave the demo">
+                  Demo · exit
+                </button>
+              ))}
             {signedIn && (
               <button type="button" className="nav-button" onClick={() => void api?.signOut().then(() => navigate("/"))}>
                 Sign out

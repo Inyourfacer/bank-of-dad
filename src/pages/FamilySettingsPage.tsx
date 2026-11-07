@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { ConfirmButton } from "../components/ConfirmButton";
 import { ErrorMessage, Field } from "../components/Field";
 import { useAction, useApp } from "../data/AppContext";
 import type { Role } from "../data/types";
@@ -115,18 +116,12 @@ function Members() {
             </span>
             <span className="chip">{m.role === "parent" ? "Parent" : "Family device"}</span>
             {m.user_id !== data.me.user_id && (
-              <button
-                type="button"
-                className="link-button danger"
+              <ConfirmButton
+                label="Remove"
+                confirmLabel={`Remove ${m.display_name}`}
                 disabled={busy}
-                onClick={() => {
-                  if (confirm(`Remove ${m.display_name}? They won't be able to sign in to this family.`)) {
-                    void run((api) => api.removeMember(m.user_id));
-                  }
-                }}
-              >
-                Remove
-              </button>
+                onConfirm={() => void run((api) => api.removeMember(m.user_id))}
+              />
             )}
           </li>
         ))}

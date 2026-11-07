@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ErrorMessage, Field } from "../components/Field";
+import { ConfirmButton } from "../components/ConfirmButton";
 import { KidForm } from "../components/KidForm";
 import type { KidAccount } from "../data/account";
 import { useAction, useApp } from "../data/AppContext";
@@ -215,18 +216,14 @@ function Activity({ account }: { account: KidAccount }) {
                 {formatCents(Math.abs(a.amountCents))}
               </span>
               {a.deletable ? (
-                <button
-                  type="button"
+                <ConfirmButton
+                  label="×"
+                  confirmLabel="Delete"
+                  ariaLabel="Delete this entry"
                   className="icon-button"
-                  aria-label="Delete"
-                  title="Delete"
                   disabled={busy}
-                  onClick={() => {
-                    if (confirm("Delete this entry?")) void run((api) => api.deleteTransaction(a.id));
-                  }}
-                >
-                  ×
-                </button>
+                  onConfirm={() => void run((api) => api.deleteTransaction(a.id))}
+                />
               ) : (
                 <span className="icon-spacer" />
               )}
