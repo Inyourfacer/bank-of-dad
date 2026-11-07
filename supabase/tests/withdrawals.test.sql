@@ -74,3 +74,14 @@ select tests.ok(public.kid_sign_in((select id from public.kids where name = 'Kit
 select tests.ok(public.verify_kid_pin((select id from public.kids where name = 'Kit'), '1111') = 'locked', 'verify_kid_pin still works and sees the lock');
 select tests.throws($$select public.check_kid_pin(gen_random_uuid(), '1')$$, 'permission denied', 'internal PIN check is not callable directly');
 reset role;
+
+-- ---------- The daily Payday job (service role) ----------
+set role service_role;
+insert into public.transactions (kid_id, kind, amount_cents, occurred_on, period_month, note)
+  values ((select id from public.kids where name = 'Kit'), 'interest', 123, current_date, date_trunc('month', current_date)::date, 'Payday');
+select tests.ok(tests.count($$select * from public.transactions where kind = 'interest'$$) = 1, 'the daily job can post a Payday');
+select tests.throws(
+  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on, period_month) values (%L, 'interest', 123, current_date, date_trunc('month', current_date)::date)$$,
+    (select id from public.kids where name = 'Kit')),
+  'transactions_one_payday_per_month', 'a month''s Payday can only be posted once');
+reset role;

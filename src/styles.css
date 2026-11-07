@@ -1315,3 +1315,22 @@ tr.current td {
   flex: 1;
   min-width: 0;
 }
+table.forecast tfoot th,
+table.forecast tfoot td {
+  font-weight: 650;
+  border-bottom: 0;
+}
+table.forecast tfoot tr:first-child th,
+table.forecast tfoot tr:first-child td {
+  border-top: 2px solid var(--border);
+}
+tr.forecast-interest th,
+tr.forecast-interest td {
+  color: var(--good-ink);
+  font-weight: 500;
+  padding-top: 0;
+}
+table td,
+table th {
+  font-variant-numeric: tabular-nums;
+}

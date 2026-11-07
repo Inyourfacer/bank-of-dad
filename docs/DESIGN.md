@@ -245,10 +245,13 @@ schedule, the numbers can always be recomputed and audited.
 
 ### 9.2 Payday posting
 
-A GitHub Actions job runs on the 1st of each month (and can be run by hand). It
-computes the previous month's interest for every account and inserts a Payday
-transaction. Each Payday is unique per `(account, month)`, so a re-run never
-double-pays. If a run is missed, the next run catches up on every unpaid month.
+A GitHub Actions job (`.github/workflows/daily.yml`, `scripts/daily.ts`) runs
+every day. For each open account it inserts a Payday transaction for every
+month that has **ended in the family's time zone** and isn't posted yet, so a
+missed run catches up on the next one. Each Payday is unique per
+`(account, month)`, so a re-run never double-pays. It also reports any posted
+amount that no longer matches the ledger. The planning logic (`planPaydays`)
+is a pure, unit-tested function built on the interest engine.
 
 **Interest is always derived.** The app computes balances and Paydays from the
 ledger and rate schedule with the interest engine. Posted Payday rows are a
@@ -267,8 +270,8 @@ with any past date.
 
 ### 9.3 Keep-alive
 
-Supabase pauses free projects after about a week of inactivity. A GitHub Action
-pings the database every 3 days to prevent that.
+Supabase pauses free projects after about a week of inactivity. The daily
+Payday job reads the database every day, which keeps it awake.
 
 ### 9.4 Security model
 
@@ -341,4 +344,5 @@ All money is stored as **integer cents**.
 | CD bonus | +1%/month, configurable |
 | Notifications | In-app badge only |
 | Hosting | Free: GitHub Pages + Supabase + GitHub Actions |
+| Paydays | Posted by one daily GitHub job, which also keeps Supabase awake |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |

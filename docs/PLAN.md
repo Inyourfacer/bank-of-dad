@@ -43,9 +43,9 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
 
 **Done when:** kids use it day to day.
 
-## Phase 4: Automation
-- Monthly Payday Action (idempotent, catches up on missed months).
-- Keep-alive Action every 3 days.
+## Phase 4: Automation ✅
+- Daily Payday Action (idempotent, family time zone, catches up on missed
+  months); the same daily run keeps Supabase awake.
 - Parent liability forecast.
 
 **Done when:** interest posts itself on the 1st with no one touching anything.

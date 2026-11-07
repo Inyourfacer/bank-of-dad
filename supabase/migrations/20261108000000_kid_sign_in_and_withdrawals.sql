@@ -188,4 +188,6 @@ grant execute on function
   public.cancel_withdrawal(uuid, text, uuid),
   public.decide_withdrawal(uuid, boolean)
 to authenticated;
--- check_kid_pin stays internal (no direct client access).
+-- check_kid_pin stays internal. Supabase grants new functions to its API
+-- roles by default, so take it back from signed-in users explicitly.
+revoke execute on function public.check_kid_pin(uuid, text) from authenticated;

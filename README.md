@@ -24,6 +24,9 @@ Without Supabase configured, **Family → Try the demo** runs the whole app on
 an in-memory pretend family. To connect a real database, see
 [docs/SETUP.md](docs/SETUP.md).
 
+A daily GitHub job (`.github/workflows/daily.yml`) posts Paydays and keeps
+Supabase awake. To run it by hand: `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run daily -- --dry-run`.
+
 Database security rules are tested against plain Postgres:
 
 ```sh

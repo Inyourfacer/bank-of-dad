@@ -166,6 +166,28 @@ where email = 'their-email@example.com';
    - `SUPABASE_ANON_KEY`: the anon / publishable key
 3. Re-run the deploy: **Actions → Deploy to GitHub Pages → Run workflow**.
 
+### 5b. Turn on automatic Paydays
+
+A daily GitHub job posts each kid's Payday once the month ends and keeps the
+free Supabase project from pausing. It needs Supabase's **secret** key, which
+can read and write everything, so it goes in a GitHub **secret** (hidden even
+from you after saving), never in a variable or the app.
+
+1. In Supabase, **Project Settings → API Keys**, copy the **service_role** /
+   **secret** key. (Older dashboards: **Project Settings → API → service_role**,
+   click *Reveal*.)
+2. In GitHub, **Settings → Secrets and variables → Actions → Secrets** tab →
+   **New repository secret**:
+   - Name: `SUPABASE_SERVICE_ROLE_KEY`
+   - Secret: the key you copied
+3. Test it: **Actions → Daily bank jobs → Run workflow**, tick **Only show
+   what would be posted**, and run. The log should say how many families and
+   kid accounts it checked. Untick the box (or wait for the daily run) to post
+   for real.
+
+The job runs every day at 10:23 UTC (early morning in the US). Running it more
+than once is harmless: each month is posted only once.
+
 ## 6. First sign-in
 
 1. Open `https://inyourfacer.github.io/bank-of-dad/`, then go to **Family →
@@ -209,8 +231,12 @@ PGHOST=localhost PGUSER=postgres supabase/tests/run.sh
 
 ## Good to know
 
-- **Free projects pause after about a week of no use.** If the app says it
-  can't connect, open the Supabase dashboard and click **Restore**. Phase 4 adds
-  an automatic weekly "keep-alive" so this stops happening.
+- **Free projects pause after about a week of no use.** The daily job (step
+  5b) prevents this. If it ever happens anyway, open the Supabase dashboard
+  and click **Restore**.
+- **GitHub pauses scheduled jobs in a repository with no commits for 60
+  days** and emails you first. If that happens, open **Actions → Daily bank
+  jobs** and click **Enable workflow**. Balances on screen stay correct either
+  way, because the app works out interest itself; the job just records it.
 - **Changing the database later:** new files in `supabase/migrations/` are
   applied the same way, through the SQL Editor, in filename order.

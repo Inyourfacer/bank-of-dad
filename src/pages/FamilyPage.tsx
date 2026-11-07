@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { KidForm } from "../components/KidForm";
+import { LiabilityForecast } from "../components/LiabilityForecast";
 import { RequestReview } from "../components/RequestReview";
 import { useAction, useApp } from "../data/AppContext";
 import { useAccounts } from "../data/useAccounts";
@@ -122,6 +123,8 @@ export function FamilyPage() {
           </ul>
         )}
       </section>
+
+      <LiabilityForecast />
     </div>
   );
 }
