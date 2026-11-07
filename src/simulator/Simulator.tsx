@@ -9,6 +9,7 @@ import {
   formatPercent,
   percentToFraction,
 } from "../lib/format";
+import { RateComparison } from "../components/RateComparison";
 import { GrowthChart } from "./GrowthChart";
 import { type SimSettings, useSimulation } from "./useSimulation";
 
@@ -240,6 +241,15 @@ export function Simulator() {
 
         <div className="panel">
           <GrowthChart points={r.points} showBaseline={r.hasExtras} />
+        </div>
+
+        <div className="panel">
+          <RateComparison
+            introRate={settings.introRate}
+            introMonths={settings.introMonths}
+            ongoingRate={settings.ongoingRate}
+            bankApy={settings.bankApy}
+          />
         </div>
 
         <div className="insights">

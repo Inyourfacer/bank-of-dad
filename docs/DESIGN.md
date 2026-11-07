@@ -130,6 +130,26 @@ other pending requests. Interest keeps accruing on money that is still pending.
 - Readout: final balance, total deposited, total interest, and how long it
   takes to double.
 
+**Rate comparison** (always visible on the kid view and in the simulator)
+- The Bank of Dad quotes **monthly** rates and real banks quote **annual**
+  rates, so every rate is shown **both ways** for an apples-to-apples
+  comparison:
+
+  | Account | Per month | Per year | $100 for a year earns |
+  |---|---|---|---|
+  | Bank of Dad starter rate | 2% | 26.82% | $26.82 |
+  | Bank of Dad regular rate | 1% | 12.68% | $12.68 |
+  | Regular bank | 0.042% | 0.5% | $0.50 |
+
+- Conversions assume monthly compounding both ways:
+  `per year = (1 + monthly)^12 − 1` and `per month = (1 + annual)^(1/12) − 1`.
+  "Per year" is the effective annual yield (APY), which is what banks advertise.
+- The kid view shows **that kid's own** rates. The starter row only appears
+  while it still applies or is recent; the regular-bank rate is editable by
+  parents (default 0.5%).
+- Bars on one shared per-year scale, plus a line like *"the Bank of Dad pays
+  about 25× more than a regular bank."*
+
 **Activity**: a ledger of deposits, withdrawals, Paydays and pending requests.
 
 **Later:** savings goals with a projected date, lessons that unlock as the kid
@@ -281,7 +301,8 @@ All money is stored as **integer cents**.
 | Payday | Last day of each month; daily accrual, as in §3.2 |
 | Withdrawals | Anytime, by request; a parent approves |
 | Kid logins | Profile picker + 4-digit PIN |
-| Open date | The kid's first login |
+| Open date | The kid's first login (confirmed). Deposits made earlier earn nothing until then |
+| Rate display | Bank of Dad and regular-bank rates shown both per month and per year |
 | Loan rate | 3%/month |
 | CD bonus | +1%/month, configurable |
 | Notifications | In-app badge only |

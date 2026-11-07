@@ -497,3 +497,90 @@ thead th {
   color: var(--text-secondary);
   font-weight: 600;
 }
+
+/* ---------- Rate comparison ---------- */
+.rate-compare {
+  display: grid;
+  gap: 14px;
+}
+.rate-compare h2 {
+  font-size: 1.05rem;
+}
+.muted {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.table-wrap.flat {
+  max-height: none;
+  margin: 0;
+}
+tbody th {
+  text-align: left;
+  font-weight: 500;
+}
+.rate-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rate-detail {
+  display: block;
+  padding-left: 20px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+td.strong {
+  font-weight: 650;
+}
+.rate-compare .cheer {
+  margin: 0;
+}
+.rate-bars {
+  display: grid;
+  gap: 8px;
+}
+.rate-bars-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.rate-bar-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.rate-bar-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rate-bar-track {
+  height: 12px;
+  background: var(--surface-2);
+  border-radius: 4px;
+}
+.rate-bar {
+  height: 100%;
+  border-radius: 4px;
+}
+.rate-bar-value {
+  text-align: right;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+@media (max-width: 520px) {
+  .rate-bar-row {
+    grid-template-columns: 84px minmax(0, 1fr) 60px;
+    gap: 8px;
+  }
+  .rate-compare th,
+  .rate-compare td {
+    padding: 8px 6px;
+    font-size: 0.82rem;
+  }
+}
