@@ -93,7 +93,7 @@ Kids can withdraw **at any time**, through a request:
 
 1. The kid taps **Withdraw** and enters an amount and a reason.
 2. **Reality check** screen: *"If you keep this $10 instead, it will be $11.27 in
-   a year and $17.60 in 5 years."* The kid confirms or cancels.
+   a year and $18.17 in 5 years."* The kid confirms or cancels.
 3. The request appears for **both parents** to approve or deny, with a push
    notification to come later.
 4. On approval, the withdrawal is dated the approval day, and the parent hands
