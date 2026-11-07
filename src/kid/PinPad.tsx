@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 interface Props {
   title: string;
+  /** Shown under the keypad, e.g. the demo's mock PIN. */
+  hint?: string;
   message?: string | null;
   busy?: boolean;
   /** Called with the 4 digits. Return false to clear and let the kid try again. */
@@ -11,7 +13,7 @@ interface Props {
 
 const KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "⌫"];
 
-export function PinPad({ title, message, busy, onSubmit, onCancel }: Props) {
+export function PinPad({ title, hint, message, busy, onSubmit, onCancel }: Props) {
   const [pin, setPin] = useState("");
   // Latest callback without re-running the submit effect on every render.
   const submitRef = useRef(onSubmit);
@@ -71,6 +73,7 @@ export function PinPad({ title, message, busy, onSubmit, onCancel }: Props) {
           ),
         )}
       </div>
+      {hint && <p className="demo-pin">{hint}</p>}
       <button type="button" className="link-button" onClick={onCancel}>
         Back
       </button>

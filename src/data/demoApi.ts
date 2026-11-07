@@ -27,6 +27,18 @@ const MOM = { id: "demo-mom", email: "mom@demo.family" };
 const TABLET = { id: "demo-tablet", email: "tablet@demo.family" };
 
 let seq = 0;
+
+/** Mock PINs: easy to remember and shown on screen in the demo (1111, 2222, …). */
+function mockPin(index: number): string {
+  return String((index % 9) + 1).repeat(4);
+}
+
+/** Gives every kid without a PIN a mock one (also upgrades older saved demos). */
+function fillMockPins(db: Pick<DemoDb, "kids" | "pins">) {
+  db.kids.forEach((k, i) => {
+    db.pins[k.id] ??= mockPin(i);
+  });
+}
 const id = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(seq++).toString(36)}`;
 
 function seed(): DemoDb {
@@ -87,7 +99,7 @@ function seed(): DemoDb {
     kids,
     rates,
     transactions,
-    pins: { [ava.id]: "1234", [ben.id]: "1234" },
+    pins: { [ava.id]: mockPin(0), [ben.id]: mockPin(1), [cora.id]: mockPin(2) },
     pinFails: {},
     requests: [
       {
@@ -119,6 +131,7 @@ function load(): DemoDb {
       // Demo data saved by an older version of the app.
       db.requests ??= [];
       db.pinFails ??= {};
+      fillMockPins(db);
       return db;
     }
   } catch {
@@ -137,6 +150,8 @@ export function resetDemo() {
 
 export interface DemoApi extends BankApi {
   signInAs(role: Role): Promise<void>;
+  /** The kid's PIN, shown on screen in the demo only. */
+  demoPin(kidId: string): string | undefined;
 }
 
 export function createDemoApi(): DemoApi {
@@ -190,6 +205,9 @@ export function createDemoApi(): DemoApi {
   const api: DemoApi = {
     kind: "demo",
 
+    demoPin(kidId) {
+      return db.pins[kidId];
+    },
     async currentUser() {
       return db.user ? { id: db.user.id, email: db.user.email } : null;
     },
@@ -260,6 +278,7 @@ export function createDemoApi(): DemoApi {
         throw new ApiError("There's already a kid with that name.");
       }
       db.kids.push({ ...kid, id: id("kid"), family_id: familyId, account_opened_on: null, created_at: new Date().toISOString() });
+      fillMockPins(db);
       changed();
     },
     async updateKid(kidId, changes) {
