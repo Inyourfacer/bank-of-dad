@@ -6,7 +6,7 @@
 
 import { type ISODate, addDays, addMonths, startOfMonth, todayInZone } from "../engine/dates";
 import { ApiError, type BankApi, type SessionUser } from "./api";
-import type { Family, FamilyData, Kid, Member, RatePeriodRow, Role, TransactionRow } from "./types";
+import type { Family, FamilyData, Kid, Member, PinStatus, RatePeriodRow, Role, TransactionRow, WithdrawalRequest } from "./types";
 
 interface DemoDb {
   family: Family;
@@ -15,6 +15,9 @@ interface DemoDb {
   rates: RatePeriodRow[];
   transactions: TransactionRow[];
   pins: Record<string, string>;
+  /** Failed PIN attempts and lock expiry (ms since epoch) per kid. */
+  pinFails: Record<string, { count: number; lockedUntil: number }>;
+  requests: WithdrawalRequest[];
   user: (SessionUser & { role: Role }) | null;
 }
 
@@ -85,6 +88,18 @@ function seed(): DemoDb {
     rates,
     transactions,
     pins: { [ava.id]: "1234", [ben.id]: "1234" },
+    pinFails: {},
+    requests: [
+      {
+        id: id("req"),
+        kid_id: ava.id,
+        amount_cents: 500,
+        reason: "Ice cream with friends",
+        status: "pending",
+        decided_at: null,
+        created_at: new Date(Date.now() - 3 * 3600_000).toISOString(),
+      },
+    ],
     user: null,
   };
 }
@@ -99,7 +114,13 @@ function openingRates(k: Kid, openedOn: ISODate): RatePeriodRow[] {
 function load(): DemoDb {
   try {
     const raw = sessionStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as DemoDb;
+    if (raw) {
+      const db = JSON.parse(raw) as DemoDb;
+      // Demo data saved by an older version of the app.
+      db.requests ??= [];
+      db.pinFails ??= {};
+      return db;
+    }
   } catch {
     /* storage unavailable: fall through to a fresh seed */
   }
@@ -142,6 +163,29 @@ export function createDemoApi(): DemoApi {
     return k;
   };
   const tick = () => new Promise((r) => setTimeout(r, 120));
+
+  /** Mirrors check_kid_pin: 5 misses lock the profile for a minute. */
+  const checkPin = (kidId: string, pin: string): PinStatus => {
+    kidById(kidId);
+    const real = db.pins[kidId];
+    if (!real) return "no_pin";
+    const f = (db.pinFails[kidId] ??= { count: 0, lockedUntil: 0 });
+    if (f.lockedUntil > Date.now()) return "locked";
+    if (pin === real) {
+      f.count = 0;
+      f.lockedUntil = 0;
+      return "ok";
+    }
+    f.count += 1;
+    if (f.count >= 5) {
+      f.count = 0;
+      f.lockedUntil = Date.now() + 60_000;
+      save();
+      return "locked";
+    }
+    save();
+    return "wrong";
+  };
 
   const api: DemoApi = {
     kind: "demo",
@@ -186,6 +230,7 @@ export function createDemoApi(): DemoApi {
         rates: [...db.rates].sort((a, b) => a.effective_from.localeCompare(b.effective_from)),
         transactions: [...db.transactions].sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)),
         kidsWithPin: Object.keys(db.pins),
+        withdrawalRequests: [...db.requests].sort((a, b) => b.created_at.localeCompare(a.created_at)),
       });
     },
     async createFamily() {
@@ -227,6 +272,7 @@ export function createDemoApi(): DemoApi {
       db.kids = db.kids.filter((k) => k.id !== kidId);
       db.rates = db.rates.filter((r) => r.kid_id !== kidId);
       db.transactions = db.transactions.filter((t) => t.kid_id !== kidId);
+      db.requests = db.requests.filter((r) => r.kid_id !== kidId);
       delete db.pins[kidId];
       changed();
     },
@@ -272,6 +318,71 @@ export function createDemoApi(): DemoApi {
       const r = db.rates.find((x) => x.id === rateId);
       if (r && r.effective_from <= today()) throw new ApiError("Rates already in effect can't be removed. Add a new rate change instead.");
       db.rates = db.rates.filter((x) => x.id !== rateId);
+      changed();
+    },
+
+    async kidSignIn(kidId, pin) {
+      await tick();
+      const status = checkPin(kidId, pin);
+      if (status !== "ok") return { status, firstLogin: false };
+      const k = kidById(kidId);
+      const firstLogin = !k.account_opened_on;
+      if (firstLogin) {
+        k.account_opened_on = today();
+        db.rates.push(...openingRates(k, k.account_opened_on));
+      }
+      changed();
+      return { status, firstLogin };
+    },
+    async requestWithdrawal(kidId, pin, amountCents, reason) {
+      await tick();
+      const status = checkPin(kidId, pin);
+      if (status !== "ok") return status;
+      if (!kidById(kidId).account_opened_on) throw new ApiError("This account isn't open yet.");
+      if (amountCents <= 0) throw new ApiError("Enter an amount.");
+      if (db.requests.filter((r) => r.kid_id === kidId && r.status === "pending").length >= 5) {
+        throw new ApiError("You already have 5 requests waiting. Ask a parent to look at them first.");
+      }
+      db.requests.push({
+        id: id("req"),
+        kid_id: kidId,
+        amount_cents: amountCents,
+        reason: reason.trim() || null,
+        status: "pending",
+        decided_at: null,
+        created_at: new Date().toISOString(),
+      });
+      changed();
+      return status;
+    },
+    async cancelWithdrawal(kidId, pin, requestId) {
+      const status = checkPin(kidId, pin);
+      if (status !== "ok") return status;
+      const r = db.requests.find((x) => x.id === requestId && x.kid_id === kidId && x.status === "pending");
+      if (!r) throw new ApiError("That request isn't waiting anymore.");
+      r.status = "cancelled";
+      r.decided_at = new Date().toISOString();
+      changed();
+      return status;
+    },
+    async decideWithdrawal(requestId, approve) {
+      requireParent();
+      const r = db.requests.find((x) => x.id === requestId);
+      if (!r) throw new ApiError("Request not found.");
+      if (r.status !== "pending") throw new ApiError(`That request was already ${r.status}.`);
+      if (approve) {
+        db.transactions.push({
+          id: id("txn"),
+          kid_id: r.kid_id,
+          kind: "withdrawal",
+          amount_cents: -r.amount_cents,
+          occurred_on: today(),
+          note: r.reason ?? "Withdrawal",
+          created_at: new Date().toISOString(),
+        });
+      }
+      r.status = approve ? "approved" : "denied";
+      r.decided_at = new Date().toISOString();
       changed();
     },
   };

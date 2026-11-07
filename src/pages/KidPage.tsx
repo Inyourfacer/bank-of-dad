@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ErrorMessage, Field } from "../components/Field";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { KidForm } from "../components/KidForm";
+import { RequestReview } from "../components/RequestReview";
 import type { KidAccount } from "../data/account";
 import { useAction, useApp } from "../data/AppContext";
 import type { Kid, NewTransaction, RatePeriodRow } from "../data/types";
@@ -64,6 +65,7 @@ export function KidPage({ kidId }: { kidId: string }) {
           <Activity account={account} />
         </div>
         <div className="stack">
+          <RequestReview requests={data.withdrawalRequests.filter((r) => r.kid_id === kid.id)} showKid={false} />
           <RatesPanel kid={kid} rates={rates} />
           <ProfilePanel kid={kid} hasPin={hasPin} />
           <DangerZone kid={kid} />

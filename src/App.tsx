@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { AppProvider, useApp } from "./data/AppContext";
 import { demoOnly, enterDemo, exitDemo } from "./data/backend";
 import { match, navigate, useRoute } from "./lib/router";
-import { DevicePage } from "./pages/DevicePage";
+import { KidsApp } from "./kid/KidsApp";
 import { FamilyPage } from "./pages/FamilyPage";
 import { FamilySettingsPage } from "./pages/FamilySettingsPage";
 import { KidPage } from "./pages/KidPage";
@@ -23,6 +23,8 @@ function Shell() {
   const { api, status, data } = useApp();
   const signedIn = status === "ready" || status === "no-family";
   const onSimulator = route === "/";
+  const pending =
+    data?.me.role === "parent" ? data.withdrawalRequests.filter((r) => r.status === "pending").length : 0;
 
   useEffect(() => {
     if (route === "/demo") enterDemo();
@@ -42,6 +44,11 @@ function Shell() {
             </a>
             <a href="#/family" aria-current={!onSimulator ? "page" : undefined}>
               {data?.me.role === "device" ? "Kids" : "Family"}
+              {pending > 0 && (
+                <span className="nav-count" aria-label={`${pending} request${pending === 1 ? "" : "s"} waiting`}>
+                  {pending}
+                </span>
+              )}
             </a>
             {api?.kind === "demo" &&
               (demoOnly ? (
@@ -94,7 +101,7 @@ function Routes({ route }: { route: string }) {
   if (status === "no-family") return <SetupFamilyPage />;
   if (!data) return null;
 
-  if (data.me.role === "device") return <DevicePage />;
+  if (data.me.role === "device") return <KidsApp />;
 
   const kid = match("/family/kid/:id", route);
   if (kid) return <KidPage kidId={kid.id} />;

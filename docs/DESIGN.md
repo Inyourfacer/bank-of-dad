@@ -307,11 +307,16 @@ transactions  (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
                amount_cents, occurred_on, note,
                period_month null,  -- interest only; unique(kid_id, period_month)
                created_by, created_at)
-withdrawal_requests (Phase 3)
+withdrawal_requests (id, kid_id, amount_cents, reason,
+               status[pending|approved|denied|cancelled], decided_by, decided_at,
+               transaction_id)  -- functions only
 ```
 
 Functions: `create_family`, `add_family_member`, `remove_family_member`,
-`set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`.
+`set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`,
+`kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`.
+Every kid action re-checks that kid's PIN on the server, so a sibling holding
+the family device can't act for someone else.
 
 Paydays are a pure function of the ledger and rates, so the rounding remainder
 doesn't need its own table.
@@ -328,6 +333,9 @@ All money is stored as **integer cents**.
 | Withdrawals | Anytime, by request; a parent approves |
 | Kid logins | Profile picker + 4-digit PIN |
 | Open date | The kid's first login (confirmed). Deposits made earlier earn nothing until then |
+| Kid sessions | Signed out after 5 minutes idle on the shared device |
+| Pending withdrawals | Hold the money: a kid can ask for at most their balance minus pending requests |
+| Junior mode | Simple version in Phase 3 (jar, big number, "if you wait"); full visuals in Phase 5 |
 | Rate display | Bank of Dad and regular-bank rates shown both per month and per year |
 | Loan rate | 3%/month |
 | CD bonus | +1%/month, configurable |

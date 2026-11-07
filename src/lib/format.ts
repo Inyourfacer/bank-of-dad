@@ -39,3 +39,13 @@ export function percentToFraction(text: string): number {
   const n = Number(text.replace(/[%\s]/g, ""));
   return Number.isFinite(n) && n > 0 ? n / 100 : 0;
 }
+
+/** "Mar 14" or "Mar 14, 2027" from an ISO date. */
+export function formatDay(iso: string, withYear = false): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    ...(withYear ? { year: "numeric" } : {}),
+    timeZone: "UTC",
+  });
+}

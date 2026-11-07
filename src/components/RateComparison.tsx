@@ -1,11 +1,41 @@
 import { type ComparableRate, fromAnnual, fromMonthly, timesMore } from "../engine/rates";
 import { formatCents, formatPercent } from "../lib/format";
 
+/** One Bank of Dad rate to compare, e.g. a starter rate and a regular rate. */
+export interface DadRate {
+  label: string;
+  /** Short label for the bar chart. */
+  short: string;
+  detail: string;
+  monthly: number;
+}
+
 interface Props {
-  introRate: number;
-  introMonths: number;
-  ongoingRate: number;
+  dad: DadRate[];
   bankApy: number;
+  title?: string;
+  /** Which Bank of Dad rate the "N× more" line uses (default: the last). */
+  headlineIndex?: number;
+}
+
+/** Rates for the simulator's starter + regular plan. */
+export function planRates(introRate: number, introMonths: number, ongoingRate: number): DadRate[] {
+  const out: DadRate[] = [];
+  if (introMonths > 0 && introRate !== ongoingRate) {
+    out.push({
+      label: "Bank of Dad",
+      short: "Dad: starter",
+      detail: `Starter rate, first ${introMonths} month${introMonths === 1 ? "" : "s"}`,
+      monthly: introRate,
+    });
+  }
+  out.push({
+    label: "Bank of Dad",
+    short: out.length ? "Dad: regular" : "Bank of Dad",
+    detail: out.length ? "Regular rate, after that" : "Every month",
+    monthly: ongoingRate,
+  });
+  return out;
 }
 
 interface Row {
@@ -21,26 +51,15 @@ interface Row {
 /** Small rates need more decimals to be honest (0.04%, not 0%). */
 const pct = (x: number) => formatPercent(x, x > 0 && x < 0.01 ? 3 : 2);
 
-export function RateComparison({ introRate, introMonths, ongoingRate, bankApy }: Props) {
-  const rows: Row[] = [];
-  if (introMonths > 0 && introRate !== ongoingRate) {
-    rows.push({
-      key: "intro",
-      name: "Bank of Dad",
-      short: "Dad: starter",
-      detail: `Starter rate, first ${introMonths} month${introMonths === 1 ? "" : "s"}`,
-      rate: fromMonthly(introRate),
-      color: "var(--series-interest)",
-    });
-  }
-  rows.push({
-    key: "ongoing",
-    name: "Bank of Dad",
-    short: rows.length ? "Dad: regular" : "Bank of Dad",
-    detail: rows.length ? "Regular rate, after that" : "Every month",
-    rate: fromMonthly(ongoingRate),
+export function RateComparison({ dad, bankApy, title = "Comparing interest rates", headlineIndex }: Props) {
+  const rows: Row[] = dad.map((d, i) => ({
+    key: `dad-${i}`,
+    name: d.label,
+    short: d.short,
+    detail: d.detail,
+    rate: fromMonthly(d.monthly),
     color: "var(--series-interest)",
-  });
+  }));
   const bank = fromAnnual(bankApy);
   rows.push({
     key: "bank",
@@ -52,11 +71,12 @@ export function RateComparison({ introRate, introMonths, ongoingRate, bankApy }:
   });
 
   const maxAnnual = Math.max(...rows.map((r) => r.rate.annual), 1e-9);
-  const ratio = timesMore(rows[rows.length - 2].rate, bank);
+  const ratio = timesMore(rows[headlineIndex ?? rows.length - 2].rate, bank);
+  const many = dad.length > 1;
 
   return (
     <section className="rate-compare" aria-labelledby="rate-compare-title">
-      <h2 id="rate-compare-title">Comparing interest rates</h2>
+      <h2 id="rate-compare-title">{title}</h2>
       <p className="muted">
         The Bank of Dad quotes rates <strong>per month</strong>; regular banks quote them <strong>per year</strong>. Here
         they are side by side, both ways, with interest added monthly.
@@ -109,7 +129,8 @@ export function RateComparison({ introRate, introMonths, ongoingRate, bankApy }:
 
       {Number.isFinite(ratio) && ratio > 1 && (
         <p className="cheer">
-          Even after the starter months, the Bank of Dad pays about {Math.round(ratio)}× more than a regular bank.
+          {many && headlineIndex === undefined ? "Even after the starter months, the" : "The"} Bank of Dad pays about{" "}
+          {Math.round(ratio)}× more than a regular bank.
         </p>
       )}
     </section>

@@ -1,6 +1,6 @@
 import { type SupabaseClient, createClient } from "@supabase/supabase-js";
 import { ApiError, type BankApi } from "./api";
-import type { FamilyData, Kid, Member, RatePeriodRow, TransactionRow } from "./types";
+import type { FamilyData, Kid, Member, PinStatus, RatePeriodRow, TransactionRow, WithdrawalRequest } from "./types";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -83,12 +83,17 @@ export function createSupabaseApi(): BankApi {
       const me = members.find((m) => m.user_id === auth.user!.id);
       if (!me) return null;
 
-      const [family, kids, rates, transactions, withPin] = await Promise.all([
+      const [family, kids, rates, transactions, withPin, requests] = await Promise.all([
         db.from("families").select("*").single(),
         db.from("kids").select("*").order("created_at"),
         db.from("rate_periods").select("id, kid_id, effective_from, monthly_rate").order("effective_from"),
         db.from("transactions").select("id, kid_id, kind, amount_cents, occurred_on, note, created_at").order("occurred_on"),
         db.rpc("kids_with_pin"),
+        db
+          .from("withdrawal_requests")
+          .select("id, kid_id, amount_cents, reason, status, decided_at, created_at")
+          .order("created_at", { ascending: false })
+          .limit(500),
       ]);
       const f = check(family) as FamilyData["family"];
       return {
@@ -108,6 +113,7 @@ export function createSupabaseApi(): BankApi {
         rates: (check(rates) as RatePeriodRow[]).map((r) => ({ ...r, monthly_rate: num(r.monthly_rate) })),
         transactions: (check(transactions) as TransactionRow[]).map((t) => ({ ...t, amount_cents: num(t.amount_cents) })),
         kidsWithPin: (check(withPin) as string[]) ?? [],
+        withdrawalRequests: (check(requests) as WithdrawalRequest[]).map((r) => ({ ...r, amount_cents: num(r.amount_cents) })),
       };
     },
 
@@ -148,6 +154,23 @@ export function createSupabaseApi(): BankApi {
     },
     async deleteRatePeriod(id) {
       check(await db.from("rate_periods").delete().eq("id", id));
+    },
+
+    async kidSignIn(kidId, pin) {
+      const r = check(await db.rpc("kid_sign_in", { p_kid: kidId, p_pin: pin })) as { status: PinStatus; first_login: boolean };
+      return { status: r.status, firstLogin: r.first_login };
+    },
+    async requestWithdrawal(kidId, pin, amountCents, reason) {
+      const r = check(
+        await db.rpc("request_withdrawal", { p_kid: kidId, p_pin: pin, p_amount_cents: amountCents, p_reason: reason }),
+      ) as { status: PinStatus };
+      return r.status;
+    },
+    async cancelWithdrawal(kidId, pin, requestId) {
+      return check(await db.rpc("cancel_withdrawal", { p_kid: kidId, p_pin: pin, p_request: requestId })) as PinStatus;
+    },
+    async decideWithdrawal(requestId, approve) {
+      check(await db.rpc("decide_withdrawal", { p_request: requestId, p_approve: approve }));
     },
   };
 }

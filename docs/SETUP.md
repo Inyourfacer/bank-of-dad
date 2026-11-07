@@ -28,6 +28,10 @@ You'll end up with:
 2. Paste the entire contents of
    [`supabase/migrations/20261107000000_core.sql`](../supabase/migrations/20261107000000_core.sql)
    and click **Run**. You should see "Success. No rows returned".
+3. Click **New query** again and do the same with
+   [`supabase/migrations/20261108000000_kid_sign_in_and_withdrawals.sql`](../supabase/migrations/20261108000000_kid_sign_in_and_withdrawals.sql).
+   Always run the files in this order (oldest first). If you already ran the
+   first file earlier, just run the second one.
 
 This creates the tables, the security rules that keep each family's data
 private, and the functions for PINs and opening accounts.
@@ -181,8 +185,9 @@ should see exactly the three logins from step 4. With sign-ups off (step 3a),
 no one else can add themselves to that list. The database rules also ignore
 any login a parent hasn't added to the family.
 
-On the kids' device: **Family → Family device**, then sign in with the device
-email and password. (Kid profiles with PIN sign-in arrive in Phase 3.)
+On the kids' device: **Kids → Family device**, then sign in with the device
+email and password. Each kid taps their picture and enters their PIN. Their
+first sign-in opens the account, and interest starts that day.
 
 ## Local development
 

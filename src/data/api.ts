@@ -1,4 +1,4 @@
-import type { FamilyData, FamilySettings, KidTemplate, Member, NewTransaction, Role } from "./types";
+import type { FamilyData, FamilySettings, KidSignInResult, KidTemplate, Member, NewTransaction, PinStatus, Role } from "./types";
 
 export interface SessionUser {
   id: string;
@@ -35,6 +35,28 @@ export interface BankApi {
   deleteTransaction(id: string): Promise<void>;
   addRatePeriod(kidId: string, effectiveFrom: string, monthlyRate: number): Promise<void>;
   deleteRatePeriod(id: string): Promise<void>;
+
+  /** Kid signs in on the family device; the first success opens the account. */
+  kidSignIn(kidId: string, pin: string): Promise<KidSignInResult>;
+  /** Kid asks to take money out (re-checks the PIN on the server). */
+  requestWithdrawal(kidId: string, pin: string, amountCents: number, reason: string): Promise<PinStatus>;
+  cancelWithdrawal(kidId: string, pin: string, requestId: string): Promise<PinStatus>;
+  /** Parent approves (records the withdrawal today) or denies. */
+  decideWithdrawal(requestId: string, approve: boolean): Promise<void>;
+}
+
+/** What to tell a kid when a PIN check fails. */
+export function pinMessage(status: PinStatus): string {
+  switch (status) {
+    case "locked":
+      return "Too many wrong tries. Wait a minute, then try again.";
+    case "no_pin":
+      return "You don't have a PIN yet. Ask a parent to set one.";
+    case "wrong":
+      return "That PIN didn't match. Try again.";
+    default:
+      return "";
+  }
 }
 
 /** Errors with a message that is safe and useful to show the user. */
