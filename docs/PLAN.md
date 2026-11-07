@@ -2,14 +2,14 @@
 
 Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the details.
 
-## Phase 0: Foundations
-- Scaffold Vite + React + TypeScript, ESLint/Prettier, Vitest.
+## Phase 0: Foundations ✅
+- Scaffold Vite + React + TypeScript, oxlint, Vitest.
 - GitHub Actions: lint, test and build on every push; deploy `main` to GitHub Pages.
-- Write a setup guide for creating the Supabase project and adding GitHub secrets.
+- The Supabase setup guide moves to Phase 2, where it's first needed.
 
 **Done when:** a placeholder page is live on GitHub Pages and CI is green.
 
-## Phase 1: Interest engine + simulator (no backend)
+## Phase 1: Interest engine + simulator (no backend) ✅
 - Pure `interest` module covering daily accrual, monthly Payday, rate periods,
   the intro period from the open date, cent rounding with carry, and
   projections with one-time and recurring deposits.
@@ -31,10 +31,10 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
 **Done when:** a parent can set up all 5 accounts and record deposits.
 
 ## Phase 3: Kid view + withdrawals
-- Profile picker + PIN.
+- Profile picker + PIN. The first login sets the account's open date.
 - Kid home (balance, lifetime interest, Payday countdown, earned this month),
   growth chart, what-if panel with extra deposits, and the activity list.
-- Withdrawal request flow with the reality check, plus parent approval.
+- Withdrawal request flow with the reality check, plus parent approval and a pending badge.
 
 **Done when:** kids use it day to day.
 
@@ -46,9 +46,10 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
 **Done when:** interest posts itself on the 1st with no one touching anything.
 
 ## Phase 5: Polish + Junior mode
-- Junior mode visuals (savings jar or tree), Payday celebration, dark mode,
+- Simulator comparison mode (side-by-side scenarios).
+- Junior mode visuals (savings jar or tree), Payday celebration,
   installable on the home screen.
 - Savings goals with projected dates, and lessons (Rule of 72, simple vs compound).
 
 ## Phase 6: Teaching extras
-- CDs, rate-change events, loans from Dad.
+- CDs (+1%/month bonus, configurable), rate-change events, loans from Dad (3%/month).

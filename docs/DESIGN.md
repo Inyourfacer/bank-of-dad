@@ -52,6 +52,14 @@ Every kid's account has its **own rate schedule**. The default for a new account
 - The intro period runs from the open date to the same day 3 months later.
   Example: an account opened Jan 15 earns 2% through Apr 14 and 1% from Apr 15.
 
+### 3.1a Account open date
+
+An account **opens on the kid's first login**. A parent creates the kid's
+profile ahead of time and can record deposits right away, but **interest
+starts on the open date**. Money deposited before the first login waits,
+earning nothing, until the kid signs in. That gives a natural "welcome"
+moment: *"Your account is open, and your money starts earning today!"*
+
 ### 3.2 How interest is calculated
 
 Interest **accrues daily** and is **paid on the last day of each month**.
@@ -94,8 +102,8 @@ Kids can withdraw **at any time**, through a request:
 1. The kid taps **Withdraw** and enters an amount and a reason.
 2. **Reality check** screen: *"If you keep this $10 instead, it will be $11.27 in
    a year and $18.17 in 5 years."* The kid confirms or cancels.
-3. The request appears for **both parents** to approve or deny, with a push
-   notification to come later.
+3. The request appears for **both parents** to approve or deny. An in-app
+   badge shows the number of pending requests; there are no push notifications.
 4. On approval, the withdrawal is dated the approval day, and the parent hands
    over the cash.
 
@@ -141,18 +149,32 @@ progresses (Rule of 72, simple vs compound interest), and a Payday celebration.
 
 The same chart and what-if controls as the kid view, without an account:
 starting amount, monthly rate, intro rate and length, deposits and years.
-Comparison mode shows two scenarios side by side, for example "start now" vs
-"start in 2 years". It needs no backend, so it works even if the database is
-down.
+It needs no backend, so it works even if the database is down.
+
+The simulator starts on the 1st of next month, so every month is a full
+Payday cycle. It shows:
+
+- The balance, split into *money you put in* and *interest earned*.
+- A growth chart with a dashed "without extra deposits" line and a dotted
+  "regular bank" line.
+- Insight cards: vs. a regular bank, what the extra deposits became,
+  doubling time, and the tipping point where interest has made more than
+  was put in.
+- A table of every Payday.
+
+A side-by-side comparison mode ("start now" vs "start in 2 years") comes later.
 
 ## 7. Teaching extras (after version 1)
 
-- **CDs:** lock some money for 3, 6 or 12 months at a bonus rate. Breaking the
-  lock early forfeits the bonus.
+- **CDs:** lock some money for 3, 6 or 12 months at a bonus rate on top of
+  the account's current rate. The bonus is **configurable** by the parents,
+  defaulting to **+1% a month**. Breaking the lock early forfeits the bonus.
 - **Rate events:** a parent announces a rate change with a message, as a
   lesson that rates aren't fixed.
-- **Loans from Dad:** a kid borrows at interest and sees compounding work
-  *against* them, with a payoff schedule and a "minimum payment trap" what-if.
+- **Loans from Dad:** a kid borrows at **3% a month** (configurable) and sees
+  compounding work *against* them, with a payoff schedule and a "minimum
+  payment trap" what-if. Loan interest uses the same daily-accrual,
+  month-end engine.
 
 ## 8. Look and feel
 
@@ -162,6 +184,10 @@ down.
   slept!") and a small confetti moment on Payday.
 - Works on phones first, can be installed to the home screen, and supports
   light and dark themes.
+- Chart colors: blue for *money you put in*, aqua for *interest earned*, and
+  orange for *regular bank*. They were checked for colorblind safety in both
+  themes. Aqua is low-contrast on the light background, so charts always carry
+  a legend and a table view.
 
 ## 9. Architecture (free)
 
@@ -246,13 +272,17 @@ interest_carry(kid_id, period_month, remainder numeric)  -- rounding remainder
 
 All money is stored as **integer cents**.
 
-## 11. Open questions (non-blocking)
+## 11. Decisions log
 
-1. **Loan rate:** what monthly rate should a kid pay to borrow from Dad?
-   Suggestion: 3%, so it costs more than saving earns.
-2. **CD bonus:** for example +0.5% a month for a 6-month lock?
-3. **Kid names, avatars and modes** for the 5 accounts, and each account's
-   open date. Should balances be backfilled if the arrangement already exists
-   informally?
-4. **Notifications:** is a phone notification for withdrawal requests needed
-   in version 1, or is a badge in the app enough?
+| Question | Decision |
+|---|---|
+| Who uses it | One family: 2 parents (both admins) and 5 kids aged 5–18 |
+| Default rates | 2%/month for 3 months from open, then 1%/month; set per account |
+| Payday | Last day of each month; daily accrual, as in §3.2 |
+| Withdrawals | Anytime, by request; a parent approves |
+| Kid logins | Profile picker + 4-digit PIN |
+| Open date | The kid's first login |
+| Loan rate | 3%/month |
+| CD bonus | +1%/month, configurable |
+| Notifications | In-app badge only |
+| Hosting | Free: GitHub Pages + Supabase + GitHub Actions |
