@@ -5,6 +5,8 @@ import { useApp } from "../data/AppContext";
 import { keepItValue } from "../data/kidProjection";
 import type { Kid, RatePeriodRow } from "../data/types";
 import { dollarsToCents, formatCents } from "../lib/format";
+import type { DemoApi } from "../data/demoApi";
+import { navigate } from "../lib/router";
 import { useKidSession } from "./KidSession";
 
 interface Props {
@@ -58,9 +60,25 @@ export function WithdrawPanel({ kid, rates, availableCents, simple, onClose }: P
         </p>
         <h2 className="panel-title">Sent!</h2>
         <p className="muted">Your request for {formatCents(sent)} is waiting for a parent to say yes.</p>
-        <button type="button" className="btn btn-primary" onClick={onClose}>
-          Done
-        </button>
+        <div className="actions center-actions">
+          <button type="button" className="btn btn-primary" onClick={onClose}>
+            Done
+          </button>
+          {api?.kind === "demo" && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={async () => {
+                onClose();
+                await (api as DemoApi).signInAs("parent");
+                navigate("/family");
+                window.scrollTo(0, 0);
+              }}
+            >
+              Demo: approve it as Dad
+            </button>
+          )}
+        </div>
       </div>
     );
   }

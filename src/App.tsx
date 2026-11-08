@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { AppProvider, useApp } from "./data/AppContext";
-import { demoOnly, enterDemo, exitDemo } from "./data/backend";
+import { DemoBar } from "./components/DemoBar";
+import { enterDemo } from "./data/backend";
 import { match, navigate, useRoute } from "./lib/router";
 import { KidsApp } from "./kid/KidsApp";
 import { FamilyPage } from "./pages/FamilyPage";
@@ -50,14 +51,6 @@ function Shell() {
                 </span>
               )}
             </a>
-            {api?.kind === "demo" &&
-              (demoOnly ? (
-                <span className="badge">Demo</span>
-              ) : (
-                <button type="button" className="badge" onClick={exitDemo} title="Leave the demo">
-                  Demo · exit
-                </button>
-              ))}
             {signedIn && (
               <button type="button" className="nav-button" onClick={() => void api?.signOut().then(() => navigate("/"))}>
                 Sign out
@@ -66,6 +59,8 @@ function Shell() {
           </nav>
         </div>
       </header>
+
+      <DemoBar />
 
       <main className="container main">
         <Routes route={route} />
