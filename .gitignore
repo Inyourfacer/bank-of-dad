@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Your real family config holds passwords and PINs. Keep it out of git;
+# it belongs in the FAMILY_CONFIG GitHub secret (docs/SETUP.md step 5).
+family.yaml
+family.yml
+*.family.yaml

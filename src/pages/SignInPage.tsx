@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ErrorMessage, Field } from "../components/Field";
 import { useAction, useApp } from "../data/AppContext";
 import { enterDemo } from "../data/backend";
+import { loginEmail } from "../lib/login";
 import type { DemoApi } from "../data/demoApi";
 
 type Tab = "parent" | "device";
@@ -40,7 +41,7 @@ function PasswordSignIn({ kind, onUseCode }: { kind: Tab; onUseCode?: () => void
   const [password, setPassword] = useState("");
   const submit = async (e: FormEvent) => {
     e.preventDefault();
-    await run((api) => api.signInWithPassword(email.trim(), password));
+    await run((api) => api.signInWithPassword(loginEmail(email), password));
   };
   return (
     <form className="stack" onSubmit={submit}>
@@ -51,17 +52,18 @@ function PasswordSignIn({ kind, onUseCode }: { kind: Tab; onUseCode?: () => void
         </p>
       )}
       <Field
-        label={kind === "device" ? "Device email" : "Email"}
-        type="email"
-        inputMode="email"
+        label="Username"
+        inputMode="text"
         autoComplete="username"
+        placeholder={kind === "device" ? "kids-tablet" : "dad"}
         value={email}
         onChange={setEmail}
         required
+        hint="From your family config. An email address works too."
       />
       <Field label="Password" type="password" autoComplete="current-password" value={password} onChange={setPassword} required />
       <ErrorMessage error={error} />
-      <button className="btn btn-primary" disabled={busy || !email.includes("@") || !password}>
+      <button className="btn btn-primary" disabled={busy || !email.trim() || !password}>
         {busy ? "Signing in…" : kind === "device" ? "Set up this device" : "Sign in"}
       </button>
       {onUseCode && (
