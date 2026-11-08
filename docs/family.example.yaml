@@ -1,0 +1,39 @@
+# Bank of Dad family config.
+#
+# DON'T commit your real one. Copy this, fill it in, and paste it into the
+# GitHub secret FAMILY_CONFIG (docs/SETUP.md step 4). This example file is
+# public; your secret is not.
+
+family: The Smiths
+time_zone: America/Chicago   # Paydays happen at month end in this zone
+
+# Parents sign in on the website with username + password.
+parents:
+  - name: Dad
+    username: dad
+    password: "change-me-dad"     # at least 8 characters
+  - name: Mom
+    username: mom
+    password: "change-me-mom"
+
+# The shared login for the kids' tablet or phone.
+tablet:
+  username: kids-tablet
+  password: "change-me-tablet"
+
+# Kids sign in on the tablet with their 4-digit PIN.
+# Optional per kid: picture (an emoji), view (junior for ~5-9, standard for 10+),
+# starter_rate, starter_months, rate (defaults: 2% for 3 months, then 1%).
+kids:
+  - name: Ava
+    pin: "4821"
+    picture: 🦊
+    view: standard
+  - name: Ben
+    pin: "1593"
+    picture: 🐢
+  - name: Cora
+    pin: "7395"
+    picture: 🦄
+    view: junior
+    # reset_pin: true   # set this to replace a PIN changed in the app

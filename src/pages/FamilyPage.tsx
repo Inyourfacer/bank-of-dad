@@ -36,6 +36,8 @@ export function FamilyPage() {
         </a>
       </div>
 
+      <RequestReview requests={data.withdrawalRequests} />
+
       <div className="tiles">
         <div className="panel tile">
           <h2>The Bank of Dad owes</h2>
@@ -53,8 +55,6 @@ export function FamilyPage() {
           <p className="hint">money the kids didn't have to earn</p>
         </div>
       </div>
-
-      <RequestReview requests={data.withdrawalRequests} />
 
       {missingPin.length > 0 && (
         <p className="notice" role="status">

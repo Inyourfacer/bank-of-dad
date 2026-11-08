@@ -1,0 +1,35 @@
+name: Set up family
+
+# Creates or updates the family from the FAMILY_CONFIG secret (docs/SETUP.md
+# step 4). Safe to run again: it adds what's new and never overwrites changes
+# made in the app (except passwords, and PINs marked reset_pin: true).
+on:
+  workflow_dispatch:
+    inputs:
+      check_only:
+        description: "Only check the config (don't change anything)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: setup-family
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx tsx scripts/setup-family.ts ${{ inputs.check_only && '--check' || '' }}
+        env:
+          FAMILY_CONFIG: ${{ secrets.FAMILY_CONFIG }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

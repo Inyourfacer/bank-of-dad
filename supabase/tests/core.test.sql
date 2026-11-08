@@ -76,7 +76,7 @@ select tests.ok(public.verify_kid_pin((select id from public.kids where name = '
 select tests.ok(tests.count('select * from public.kids') = 2, 'device can see the kids');
 select tests.throws($$insert into public.kids (family_id, name) values (public.my_family_id(), 'Zed')$$, 'row-level security', 'device cannot add kids');
 select tests.throws(
-  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'deposit', 100, current_date)$$,
+  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'deposit', 100, public.family_today(public.my_family_id()))$$,
     (select id from public.kids where name = 'Ava')),
   'row-level security', 'device cannot record deposits');
 update public.families set regular_bank_apy = 0.2;
@@ -94,15 +94,15 @@ select tests.throws(
     (select id from public.kids where name = 'Ava')),
   'future', 'no future-dated transactions');
 select tests.throws(
-  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'interest', 100, current_date)$$,
+  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'interest', 100, public.family_today(public.my_family_id()))$$,
     (select id from public.kids where name = 'Ava')),
   '', 'parents cannot post interest');
 select tests.throws(
-  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'deposit', -100, current_date)$$,
+  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'deposit', -100, public.family_today(public.my_family_id()))$$,
     (select id from public.kids where name = 'Ava')),
   'check constraint', 'deposits must be positive');
 select tests.throws(
-  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'withdrawal', 100, current_date)$$,
+  format($$insert into public.transactions (kid_id, kind, amount_cents, occurred_on) values (%L, 'withdrawal', 100, public.family_today(public.my_family_id()))$$,
     (select id from public.kids where name = 'Ava')),
   'check constraint', 'withdrawals must be negative');
 select tests.throws(

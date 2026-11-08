@@ -21,7 +21,7 @@ It has two uses:
 
 | Who | Count | How they sign in | Can do |
 |---|---|---|---|
-| Parents | 2 | Their own email + password on their own devices (emailed codes optional, need custom SMTP) | Everything: manage kids, deposits, rates, approve withdrawals |
+| Parents | 2 | Username + password from the family config, on their own devices (emailed codes optional, need custom SMTP) | Everything: manage kids, deposits, rates, approve withdrawals |
 | Kids | 5 | Profile picker + 4-digit PIN on a signed-in device | View own account, run what-ifs, **request** withdrawals |
 | Anyone | — | No login | Simulator only |
 
@@ -287,8 +287,14 @@ Payday job reads the database every day, which keeps it awake.
   convenience, not a hard security boundary between siblings. PINs are stored
   bcrypt-hashed in a table no client can read; five wrong guesses lock that
   profile for a minute.
-- **Sign-ups are disabled.** Parents create logins in the Supabase dashboard
-  and then add them to the family in the app.
+- **Sign-ups are disabled.** Logins come from the family config: a YAML file
+  kept in the `FAMILY_CONFIG` GitHub secret (never in the public repo, since a
+  4-digit PIN or its hash is trivial to crack). The **Set up family** job
+  (`scripts/setup-family.ts`) creates the logins with Supabase's admin API and
+  calls `apply_family_config`, which only the service role can run. It creates
+  what's missing and never overwrites changes made in the app, except
+  passwords and PINs marked `reset_pin`.
+- **Usernames** map to `<username>@bankofdad.local` logins; nothing is emailed.
 - Every rule above is covered by SQL tests (`supabase/tests/`) that run in CI.
 - The Supabase service key lives only in GitHub Actions secrets, never in the
   frontend.
@@ -317,7 +323,8 @@ withdrawal_requests (id, kid_id, amount_cents, reason,
 
 Functions: `create_family`, `add_family_member`, `remove_family_member`,
 `set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`,
-`kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`.
+`kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`,
+`apply_family_config` (service role only).
 Every kid action re-checks that kid's PIN on the server, so a sibling holding
 the family device can't act for someone else.
 
@@ -345,4 +352,5 @@ All money is stored as **integer cents**.
 | Notifications | In-app badge only |
 | Hosting | Free: GitHub Pages + Supabase + GitHub Actions |
 | Paydays | Posted by one daily GitHub job, which also keeps Supabase awake |
+| Family setup | A YAML config in a GitHub secret + a "Set up family" job; the app's own screens still work for later changes |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |

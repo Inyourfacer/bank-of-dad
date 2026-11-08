@@ -5,7 +5,7 @@ in months, not decades.
 
 - [Design](docs/DESIGN.md)
 - [Build plan](docs/PLAN.md)
-- [Setup guide](docs/SETUP.md): connect free Supabase + GitHub Pages
+- [Setup guide](docs/SETUP.md): connect free Supabase + GitHub Pages, then describe your family in a config file ([example](docs/family.example.yaml))
 
 ## Development
 

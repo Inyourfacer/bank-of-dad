@@ -18,9 +18,22 @@ interface KidSessionState {
 
 const Ctx = createContext<KidSessionState | null>(null);
 
-export function KidSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const signOut = useCallback(() => setSession(null), []);
+/**
+ * Demo only: the kid signed in on the "tablet", kept while the viewer flips to
+ * the parent view and back. In memory only, never with a real database.
+ */
+let demoResume: Session | null = null;
+
+export function KidSessionProvider({ children, remember = false }: { children: ReactNode; remember?: boolean }) {
+  const [session, setSessionState] = useState<Session | null>(() => (remember ? demoResume : null));
+  const setSession = useCallback(
+    (s: Session | null) => {
+      if (remember) demoResume = s && { ...s, firstLogin: false };
+      setSessionState(s);
+    },
+    [remember],
+  );
+  const signOut = useCallback(() => setSession(null), [setSession]);
 
   useEffect(() => {
     if (!session) return;
@@ -37,7 +50,7 @@ export function KidSessionProvider({ children }: { children: ReactNode }) {
     };
   }, [session, signOut]);
 
-  const value = useMemo(() => ({ session, signIn: setSession, signOut }), [session, signOut]);
+  const value = useMemo(() => ({ session, signIn: setSession, signOut }), [session, setSession, signOut]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

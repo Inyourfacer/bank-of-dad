@@ -10,8 +10,9 @@ import { PinPad } from "./PinPad";
 
 /** What the shared family device shows: pick your profile, enter your PIN. */
 export function KidsApp() {
+  const { api } = useApp();
   return (
-    <KidSessionProvider>
+    <KidSessionProvider remember={api?.kind === "demo"}>
       <KidsRouter />
     </KidSessionProvider>
   );

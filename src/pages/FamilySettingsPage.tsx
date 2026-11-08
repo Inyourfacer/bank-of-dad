@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { ErrorMessage, Field } from "../components/Field";
+import { loginEmail } from "../lib/login";
 import { useAction, useApp } from "../data/AppContext";
 import type { Role } from "../data/types";
 import { monthlyRateFromAnnual } from "../engine/interest";
@@ -96,7 +97,7 @@ function Members() {
 
   const add = async (e: FormEvent) => {
     e.preventDefault();
-    if (await run((api) => api.addMember(email.trim(), role, name.trim()))) {
+    if (await run((api) => api.addMember(loginEmail(email), role, name.trim()))) {
       setEmail("");
       setName("");
     }
@@ -130,8 +131,8 @@ function Members() {
       <form className="stack" onSubmit={add}>
         <h3 className="sub-title">Add someone</h3>
         <p className="hint">
-          First create their login in Supabase (<em>Authentication → Users</em>), then add them here by email. See{" "}
-          <code>docs/SETUP.md</code>.
+          The easiest way to add people is your family config: add them there and run <em>Set up family</em> again
+          (see <code>docs/SETUP.md</code>). If they already have a login, add them here by username.
         </p>
         <div className="segmented" role="radiogroup" aria-label="Role">
           {(["parent", "device"] as const).map((r) => (
@@ -141,11 +142,11 @@ function Members() {
           ))}
         </div>
         <div className="row">
-          <Field label="Email" type="email" inputMode="email" value={email} onChange={setEmail} required />
+          <Field label="Username or email" inputMode="text" value={email} onChange={setEmail} required />
           <Field label="Name" inputMode="text" value={name} onChange={setName} required maxLength={40} placeholder={role === "parent" ? "Mom" : "Kids tablet"} />
         </div>
         <ErrorMessage error={error} />
-        <button className="btn btn-primary" disabled={busy || !email.includes("@") || !name.trim()}>
+        <button className="btn btn-primary" disabled={busy || !email.trim() || !name.trim()}>
           Add
         </button>
       </form>
