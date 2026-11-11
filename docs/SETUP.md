@@ -34,6 +34,7 @@ say "Success. No rows returned".
 1. [`supabase/migrations/20261107000000_core.sql`](../supabase/migrations/20261107000000_core.sql)
 2. [`supabase/migrations/20261108000000_kid_sign_in_and_withdrawals.sql`](../supabase/migrations/20261108000000_kid_sign_in_and_withdrawals.sql)
 3. [`supabase/migrations/20261109000000_family_config.sql`](../supabase/migrations/20261109000000_family_config.sql)
+4. [`supabase/migrations/20261111000000_pay_and_expenses.sql`](../supabase/migrations/20261111000000_pay_and_expenses.sql)
 
 Already ran some of them earlier? Just run the ones you haven't, oldest first.
 
@@ -124,10 +125,18 @@ device**, and sign in with the tablet username and password. Each kid taps
 their picture and enters their PIN. Their first sign-in opens the account, and
 interest starts that day.
 
+**Set up pay (optional):** open each kid and use **Pay and bills**: switch on
+the monthly salary, pick a payday, and adjust the bills. The preview shows the
+pay stub and flags a take-home outside $5–$10. Tax brackets are under
+**Family settings → Taxes**. The defaults ($100 salary, $16.80 tax, $76 of
+bills) leave $7.20, which is deposited into the kid's account on payday.
+
 **Turn on automatic Paydays:** **Actions → Daily bank jobs → Run workflow**,
 tick **Only show what would be posted**, and run. The log should say how many
 families and kid accounts it checked. After that it runs by itself every day
-at 10:23 UTC, posts each Payday once the month ends, and keeps Supabase awake.
+at 10:23 UTC: it posts each interest Payday once the month ends, pays each
+kid's salary on their payday, and keeps Supabase awake. Until it's set up, use
+**Pay now** on the kid's page.
 
 **Check the lockdown:** in Supabase, **Authentication → Users** should list
 exactly the logins from your config.

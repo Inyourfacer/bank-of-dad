@@ -1,6 +1,7 @@
 import { type SupabaseClient, createClient } from "@supabase/supabase-js";
 import { ApiError, type BankApi } from "./api";
-import type { FamilyData, Kid, Member, PinStatus, RatePeriodRow, TransactionRow, WithdrawalRequest } from "./types";
+import { DEFAULT_TAX_BRACKETS } from "../engine/paycheck";
+import type { FamilyData, Kid, Member, PayPlan, PayStatement, PinStatus, RatePeriodRow, TransactionRow, WithdrawalRequest } from "./types";
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -83,7 +84,7 @@ export function createSupabaseApi(): BankApi {
       const me = members.find((m) => m.user_id === auth.user!.id);
       if (!me) return null;
 
-      const [family, kids, rates, transactions, withPin, requests] = await Promise.all([
+      const [family, kids, rates, transactions, withPin, requests, plans, statements] = await Promise.all([
         db.from("families").select("*").single(),
         db.from("kids").select("*").order("created_at"),
         db.from("rate_periods").select("id, kid_id, effective_from, monthly_rate").order("effective_from"),
@@ -93,6 +94,12 @@ export function createSupabaseApi(): BankApi {
           .from("withdrawal_requests")
           .select("id, kid_id, amount_cents, reason, status, decided_at, created_at")
           .order("created_at", { ascending: false })
+          .limit(500),
+        db.from("pay_plans").select("kid_id, enabled, salary_cents, pay_day, expenses"),
+        db
+          .from("pay_statements")
+          .select("id, kid_id, pay_month, paid_on, gross_cents, taxes, expenses, net_cents, created_at")
+          .order("pay_month", { ascending: false })
           .limit(500),
       ]);
       const f = check(family) as FamilyData["family"];
@@ -104,6 +111,7 @@ export function createSupabaseApi(): BankApi {
           regular_bank_apy: num(f.regular_bank_apy),
           cd_bonus_monthly_rate: num(f.cd_bonus_monthly_rate),
           loan_monthly_rate: num(f.loan_monthly_rate),
+          tax_brackets: Array.isArray(f.tax_brackets) ? f.tax_brackets : DEFAULT_TAX_BRACKETS,
         },
         kids: (check(kids) as Kid[]).map((k) => ({
           ...k,
@@ -114,6 +122,12 @@ export function createSupabaseApi(): BankApi {
         transactions: (check(transactions) as TransactionRow[]).map((t) => ({ ...t, amount_cents: num(t.amount_cents) })),
         kidsWithPin: (check(withPin) as string[]) ?? [],
         withdrawalRequests: (check(requests) as WithdrawalRequest[]).map((r) => ({ ...r, amount_cents: num(r.amount_cents) })),
+        payPlans: (check(plans) as PayPlan[]).map((p) => ({ ...p, salary_cents: num(p.salary_cents), expenses: p.expenses ?? [] })),
+        payStatements: (check(statements) as PayStatement[]).map((s) => ({
+          ...s,
+          gross_cents: num(s.gross_cents),
+          net_cents: num(s.net_cents),
+        })),
       };
     },
 
@@ -171,6 +185,22 @@ export function createSupabaseApi(): BankApi {
     },
     async decideWithdrawal(requestId, approve) {
       check(await db.rpc("decide_withdrawal", { p_request: requestId, p_approve: approve }));
+    },
+    async savePayPlan(plan) {
+      check(await db.from("pay_plans").upsert({ ...plan, updated_at: new Date().toISOString() }, { onConflict: "kid_id" }));
+    },
+    async postPaycheck(due) {
+      check(
+        await db.rpc("post_paycheck", {
+          p_kid: due.kid_id,
+          p_pay_month: due.payMonth,
+          p_paid_on: due.paidOn,
+          p_gross_cents: due.paycheck.grossCents,
+          p_taxes: due.paycheck.taxes,
+          p_expenses: due.paycheck.expenses,
+          p_net_cents: due.paycheck.netCents,
+        }),
+      );
     },
   };
 }

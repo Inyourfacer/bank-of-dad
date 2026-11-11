@@ -5,8 +5,25 @@
  */
 
 import { type ISODate, addDays, addMonths, startOfMonth, todayInZone } from "../engine/dates";
+import { DEFAULT_EXPENSES, DEFAULT_TAX_BRACKETS, type Expense } from "../engine/paycheck";
 import { ApiError, type BankApi, type SessionUser } from "./api";
-import type { Family, FamilyData, Kid, Member, PinStatus, RatePeriodRow, Role, TransactionRow, WithdrawalRequest } from "./types";
+import { paycheckFor, paydayFor } from "./payroll";
+import type {
+  Family,
+  FamilyData,
+  Kid,
+  Member,
+  PayPlan,
+  PayStatement,
+  PinStatus,
+  RatePeriodRow,
+  Role,
+  TransactionRow,
+  WithdrawalRequest,
+} from "./types";
+
+/** A stub plus the deposit it made (deleting the deposit removes the stub, as in the database). */
+type DemoStatement = PayStatement & { transaction_id: string | null };
 
 interface DemoDb {
   family: Family;
@@ -18,6 +35,8 @@ interface DemoDb {
   /** Failed PIN attempts and lock expiry (ms since epoch) per kid. */
   pinFails: Record<string, { count: number; lockedUntil: number }>;
   requests: WithdrawalRequest[];
+  payPlans: PayPlan[];
+  payStatements: DemoStatement[];
   user: (SessionUser & { role: Role }) | null;
 }
 
@@ -51,6 +70,7 @@ function seed(): DemoDb {
     regular_bank_apy: 0.005,
     cd_bonus_monthly_rate: 0.01,
     loan_monthly_rate: 0.03,
+    tax_brackets: DEFAULT_TAX_BRACKETS,
   };
   const kid = (name: string, avatar: string, mode: Kid["mode"], openedMonthsAgo: number | null): Kid => ({
     id: `demo-kid-${name.toLowerCase()}`,
@@ -89,6 +109,53 @@ function seed(): DemoDb {
     t(cora, 10, 1500, "deposit", "Tooth fairy"),
   ];
 
+  // Pay: Ava and Ben earn $100 a month, Cora (junior) $50 with smaller bills.
+  const coraBills: Expense[] = [
+    { name: "Rent", cents: 2000 },
+    { name: "Groceries", cents: 1000 },
+    { name: "Utilities", cents: 500 },
+    { name: "Insurance", cents: 300 },
+  ];
+  const payPlans: PayPlan[] = [
+    { kid_id: ava.id, enabled: true, salary_cents: 10000, pay_day: 1, expenses: DEFAULT_EXPENSES },
+    { kid_id: ben.id, enabled: true, salary_cents: 10000, pay_day: 5, expenses: DEFAULT_EXPENSES },
+    { kid_id: cora.id, enabled: true, salary_cents: 5000, pay_day: 1, expenses: coraBills },
+  ];
+  // Past pay stubs (and this month's for Ava and Cora). Ben's is left for
+  // Dad to pay with "Pay now".
+  const payStatements: DemoStatement[] = [];
+  const stub = (plan: PayPlan, monthsAgo: number) => {
+    const monthDay = addMonths(startOfMonth(today), -monthsAgo);
+    const paidOn = paydayFor(plan, monthDay);
+    if (paidOn > today) return;
+    const pc = paycheckFor(plan, family.tax_brackets);
+    const txn: TransactionRow = {
+      id: id("txn"),
+      kid_id: plan.kid_id,
+      kind: "deposit",
+      amount_cents: pc.netCents,
+      occurred_on: paidOn,
+      note: "Paycheck",
+      created_at: new Date().toISOString(),
+    };
+    transactions.push(txn);
+    payStatements.push({
+      id: id("pay"),
+      kid_id: plan.kid_id,
+      pay_month: startOfMonth(monthDay),
+      paid_on: paidOn,
+      gross_cents: pc.grossCents,
+      taxes: pc.taxes,
+      expenses: pc.expenses,
+      net_cents: pc.netCents,
+      created_at: new Date().toISOString(),
+      transaction_id: txn.id,
+    });
+  };
+  [2, 1, 0].forEach((m) => stub(payPlans[0], m));
+  stub(payPlans[1], 1);
+  stub(payPlans[2], 0);
+
   return {
     family,
     members: [
@@ -112,6 +179,8 @@ function seed(): DemoDb {
         created_at: new Date(Date.now() - 3 * 3600_000).toISOString(),
       },
     ],
+    payPlans,
+    payStatements,
     user: null,
   };
 }
@@ -131,6 +200,9 @@ function load(): DemoDb {
       // Demo data saved by an older version of the app.
       db.requests ??= [];
       db.pinFails ??= {};
+      db.payPlans ??= [];
+      db.payStatements ??= [];
+      db.family.tax_brackets ??= DEFAULT_TAX_BRACKETS;
       fillMockPins(db);
       return db;
     }
@@ -249,6 +321,8 @@ export function createDemoApi(): DemoApi {
         transactions: [...db.transactions].sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)),
         kidsWithPin: Object.keys(db.pins),
         withdrawalRequests: [...db.requests].sort((a, b) => b.created_at.localeCompare(a.created_at)),
+        payPlans: db.payPlans,
+        payStatements: [...db.payStatements].sort((a, b) => b.pay_month.localeCompare(a.pay_month)),
       });
     },
     async createFamily() {
@@ -292,6 +366,8 @@ export function createDemoApi(): DemoApi {
       db.rates = db.rates.filter((r) => r.kid_id !== kidId);
       db.transactions = db.transactions.filter((t) => t.kid_id !== kidId);
       db.requests = db.requests.filter((r) => r.kid_id !== kidId);
+      db.payPlans = db.payPlans.filter((p) => p.kid_id !== kidId);
+      db.payStatements = db.payStatements.filter((p) => p.kid_id !== kidId);
       delete db.pins[kidId];
       changed();
     },
@@ -320,6 +396,7 @@ export function createDemoApi(): DemoApi {
         throw new ApiError("That month's Payday is final. Use a date in the current month, or record an adjustment.");
       }
       db.transactions = db.transactions.filter((x) => x.id !== txnId);
+      db.payStatements = db.payStatements.filter((st) => st.transaction_id !== txnId);
       changed();
     },
     async addRatePeriod(kidId, effectiveFrom, monthlyRate) {
@@ -402,6 +479,51 @@ export function createDemoApi(): DemoApi {
       }
       r.status = approve ? "approved" : "denied";
       r.decided_at = new Date().toISOString();
+      changed();
+    },
+
+    async savePayPlan(plan) {
+      requireParent();
+      kidById(plan.kid_id);
+      if (plan.pay_day < 1 || plan.pay_day > 28) throw new ApiError("Payday must be between the 1st and the 28th.");
+      db.payPlans = [...db.payPlans.filter((p) => p.kid_id !== plan.kid_id), structuredClone(plan)];
+      changed();
+    },
+    async postPaycheck(due) {
+      requireParent();
+      kidById(due.kid_id);
+      if (db.payStatements.some((p) => p.kid_id === due.kid_id && p.pay_month === due.payMonth)) {
+        throw new ApiError("This month's pay was already paid.");
+      }
+      if (due.paidOn > today() || due.payMonth !== startOfMonth(today())) {
+        throw new ApiError("Only this month's pay can be paid, on or after payday.");
+      }
+      const pc = due.paycheck;
+      let txnId: string | null = null;
+      if (pc.netCents > 0) {
+        txnId = id("txn");
+        db.transactions.push({
+          id: txnId,
+          kid_id: due.kid_id,
+          kind: "deposit",
+          amount_cents: pc.netCents,
+          occurred_on: due.paidOn,
+          note: "Paycheck",
+          created_at: new Date().toISOString(),
+        });
+      }
+      db.payStatements.push({
+        id: id("pay"),
+        kid_id: due.kid_id,
+        pay_month: due.payMonth,
+        paid_on: due.paidOn,
+        gross_cents: pc.grossCents,
+        taxes: pc.taxes,
+        expenses: pc.expenses,
+        net_cents: pc.netCents,
+        created_at: new Date().toISOString(),
+        transaction_id: txnId,
+      });
       changed();
     },
   };

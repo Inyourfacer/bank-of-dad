@@ -1413,3 +1413,222 @@ table th {
     padding: 6px 8px;
   }
 }
+
+/* ---------- Pay stubs ---------- */
+:root {
+  --pay-tax: #6250d6;
+  --pay-bills: #eda100;
+  --pay-keep: #1baf7a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --pay-tax: #9085e9;
+    --pay-bills: #c98500;
+    --pay-keep: #199e70;
+  }
+}
+:root[data-theme="dark"] {
+  --pay-tax: #9085e9;
+  --pay-bills: #c98500;
+  --pay-keep: #199e70;
+}
+.paystub {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: var(--surface);
+}
+.paystub-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.paystub-title {
+  font-weight: 700;
+}
+.paystub-table th,
+.paystub-table td {
+  padding: 5px 0;
+  border-bottom: 0;
+}
+.paystub-table th {
+  font-weight: 500;
+  text-align: left;
+}
+.paystub-table td {
+  text-align: right;
+  white-space: nowrap;
+}
+.paystub-line {
+  padding-left: 20px !important;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.paystub-section th {
+  font-weight: 650;
+  padding-top: 10px;
+}
+.paystub-section th .swatch,
+.paystub-net th .swatch {
+  vertical-align: -1px;
+  margin-right: 4px;
+}
+.paystub-gross th,
+.paystub-gross td {
+  font-weight: 650;
+}
+.paystub-net th,
+.paystub-net td {
+  border-top: 2px solid var(--border);
+  padding-top: 10px;
+  font-weight: 750;
+  font-size: 1.05rem;
+}
+.paystub-net td {
+  color: var(--good-ink);
+}
+.paybar-wrap {
+  display: grid;
+  gap: 6px;
+}
+.paybar {
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.paybar span {
+  min-width: 4px;
+}
+.paybar-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+.paybar-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bill-row,
+.bracket-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 32px;
+  gap: 10px;
+  align-items: end;
+}
+.bill-row .icon-button,
+.bracket-row .icon-button {
+  margin-bottom: 5px;
+}
+.input-wrap.static {
+  color: var(--text-secondary);
+  padding: 0 12px;
+}
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.toggle input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--series-putin);
+}
+.pay-due {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.pay-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stub-details summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  font-weight: 600;
+}
+.stub-details[open] > summary {
+  margin-bottom: 8px;
+}
+.junior-pay {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+}
+.junior-pay li {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 10px 4px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.jp-number {
+  font-size: clamp(1rem, 4.5vw, 1.4rem);
+  font-weight: 750;
+}
+.jp-number.minus {
+  color: var(--text-secondary);
+}
+.jp-keep {
+  background: color-mix(in srgb, var(--pay-keep) 16%, var(--surface)) !important;
+}
+.jp-keep .jp-number {
+  color: var(--good-ink);
+}
+@media (max-width: 420px) {
+  .junior-pay {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* Bill rows: show the column labels once; later rows keep them for screen readers. */
+.bill-row ~ .bill-row .field > label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.stub-details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.stub-details > summary::-webkit-details-marker {
+  display: none;
+}
+.stub-details > summary > span:first-child::before {
+  content: "▸";
+  display: inline-block;
+  width: 1.1em;
+  color: var(--text-muted);
+  transition: transform 0.15s;
+}
+.stub-details[open] > summary > span:first-child::before {
+  transform: rotate(90deg);
+}

@@ -155,6 +155,27 @@ other pending requests. Interest keeps accruing on money that is still pending.
 **Later:** savings goals with a projected date, lessons that unlock as the kid
 progresses (Rule of 72, simple vs compound interest), and a Payday celebration.
 
+## 4b. Pay and expenses
+
+Each kid can have a pretend **monthly salary** (default $100). On payday,
+**taxes** (the family's progressive brackets, default 10% on the first $20,
+15% up to $60, 22% above) and **bills** (default rent $40, groceries $20,
+utilities $10, insurance $6) come out of it. Only the **take-home pay** is
+real: it's deposited into the kid's account and earns interest. The defaults
+leave **$7.20**, inside the $5–$10 target.
+
+- **Parents** set each kid's salary, payday (1st–28th) and bills, with a live
+  pay stub preview that flags a take-home outside $5–$10, and the family's tax
+  brackets in Family settings. **Pay now** pays this month's salary by hand.
+- **Kids** see their latest pay stub (salary, each tax slice, each bill, what
+  they keep) with short explanations, a bar showing where the money went, the
+  next payday, and past stubs. Junior view shows four big numbers and the bar.
+- **Paying:** the daily job pays each enabled plan on its payday
+  (`planPayroll`). Only the current month is paid, since past months are
+  final in the ledger. `post_paycheck` checks that the stub adds up and
+  records the stub and the deposit together; deleting that deposit this month
+  removes the stub so it can be paid again.
+
 ## 5. Parent view
 
 - **Family dashboard:** all 5 kids at a glance, pending withdrawal requests,
@@ -305,7 +326,7 @@ The source of truth is `supabase/migrations/`. In summary:
 
 ```
 families      (id, name, time_zone, regular_bank_apy,
-               cd_bonus_monthly_rate, loan_monthly_rate)
+               cd_bonus_monthly_rate, loan_monthly_rate, tax_brackets jsonb)
 members       (user_id → auth.users, family_id, role[parent|device], display_name)
 kids          (id, family_id, name, avatar, mode[junior|standard],
                intro_monthly_rate, intro_months, ongoing_monthly_rate,  -- rate template
@@ -316,6 +337,9 @@ transactions  (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
                amount_cents, occurred_on, note,
                period_month null,  -- interest only; unique(kid_id, period_month)
                created_by, created_at)
+pay_plans     (kid_id, enabled, salary_cents, pay_day 1-28, expenses jsonb)
+pay_statements (id, kid_id, pay_month, paid_on, gross_cents, taxes jsonb,
+               expenses jsonb, net_cents, transaction_id)  -- unique per month
 withdrawal_requests (id, kid_id, amount_cents, reason,
                status[pending|approved|denied|cancelled], decided_by, decided_at,
                transaction_id)  -- functions only
@@ -324,7 +348,8 @@ withdrawal_requests (id, kid_id, amount_cents, reason,
 Functions: `create_family`, `add_family_member`, `remove_family_member`,
 `set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`,
 `kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`,
-`apply_family_config` (service role only).
+`apply_family_config` (service role only), `post_paycheck` (parents and the
+daily job).
 Every kid action re-checks that kid's PIN on the server, so a sibling holding
 the family device can't act for someone else.
 
@@ -353,4 +378,5 @@ All money is stored as **integer cents**.
 | Hosting | Free: GitHub Pages + Supabase + GitHub Actions |
 | Paydays | Posted by one daily GitHub job, which also keeps Supabase awake |
 | Family setup | A YAML config in a GitHub secret + a "Set up family" job; the app's own screens still work for later changes |
+| Pay and expenses | Pretend $100 salary minus progressive tax and bills; only the take-home ($5–$10) is deposited |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |

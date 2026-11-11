@@ -2,6 +2,7 @@ import { useState } from "react";
 import { RateComparison } from "../components/RateComparison";
 import type { Kid } from "../data/types";
 import { formatCents, formatPercent } from "../lib/format";
+import { KidPay } from "./KidPay";
 import { kidDadRates } from "./kidRates";
 import { KidBar, PaydayNote, RecentActivity, RequestList, WelcomeBanner } from "./parts";
 import { useKidData } from "./useKidData";
@@ -44,6 +45,7 @@ export function KidHome({ kid }: { kid: Kid }) {
         </div>
         <div className="stack">
           <RequestList kid={kid} requests={d.requests} />
+          <KidPay kid={kid} />
           <div className="panel">
             <RateComparison dad={dad} bankApy={d.bankApy} title="Your rate vs. a regular bank" headlineIndex={dad.length - 1} />
           </div>
