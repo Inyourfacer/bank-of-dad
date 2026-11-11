@@ -3,6 +3,7 @@ import { kidWhatIf } from "../data/kidProjection";
 import type { Kid } from "../data/types";
 import { formatCents } from "../lib/format";
 import { KidBar, PaydayNote, RequestList, WelcomeBanner } from "./parts";
+import { JuniorPay } from "./KidPay";
 import { SavingsJar } from "./SavingsJar";
 import { useKidData } from "./useKidData";
 import { WithdrawPanel } from "./WithdrawPanel";
@@ -48,6 +49,8 @@ export function JuniorHome({ kid }: { kid: Kid }) {
           <PaydayNote account={d.account} today={d.today} />
         </div>
       </section>
+
+      <JuniorPay kid={kid} />
 
       <section className="stack" aria-labelledby="wait-title">
         <h2 className="section-title center" id="wait-title">

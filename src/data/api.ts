@@ -1,4 +1,5 @@
-import type { FamilyData, FamilySettings, KidSignInResult, KidTemplate, Member, NewTransaction, PinStatus, Role } from "./types";
+import type { DuePaycheck } from "./payroll";
+import type { FamilyData, FamilySettings, KidSignInResult, KidTemplate, Member, NewTransaction, PayPlan, PinStatus, Role } from "./types";
 
 export interface SessionUser {
   id: string;
@@ -43,6 +44,11 @@ export interface BankApi {
   cancelWithdrawal(kidId: string, pin: string, requestId: string): Promise<PinStatus>;
   /** Parent approves (records the withdrawal today) or denies. */
   decideWithdrawal(requestId: string, approve: boolean): Promise<void>;
+
+  /** Creates or replaces a kid's pay plan (parents). */
+  savePayPlan(plan: PayPlan): Promise<void>;
+  /** Records a month's pay stub and deposits the take-home pay (parents). */
+  postPaycheck(due: DuePaycheck): Promise<void>;
 }
 
 /** What to tell a kid when a PIN check fails. */

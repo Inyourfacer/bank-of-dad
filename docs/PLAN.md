@@ -50,6 +50,11 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
 
 **Done when:** interest posts itself on the 1st with no one touching anything.
 
+## Pay and expenses ✅
+- Monthly salary per kid, family tax brackets, configurable bills; pay stubs
+  for kids (Standard and Junior); "Pay now" for parents; the daily job pays on
+  payday. Take-home only is deposited (default $7.20).
+
 ## Phase 5: Polish + Junior mode
 - Simulator comparison mode (side-by-side scenarios).
 - Junior mode visuals (savings jar or tree), Payday celebration,

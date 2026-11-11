@@ -1,4 +1,5 @@
 import type { ISODate } from "../engine/dates";
+import type { Expense, PayLine, TaxBracket } from "../engine/paycheck";
 
 export type Role = "parent" | "device";
 export type KidMode = "junior" | "standard";
@@ -11,6 +12,7 @@ export interface Family {
   regular_bank_apy: number;
   cd_bonus_monthly_rate: number;
   loan_monthly_rate: number;
+  tax_brackets: TaxBracket[];
 }
 
 export interface Member {
@@ -50,6 +52,28 @@ export interface TransactionRow {
   created_at: string;
 }
 
+export interface PayPlan {
+  kid_id: string;
+  enabled: boolean;
+  salary_cents: number;
+  /** Day of the month (1–28) the salary is paid. */
+  pay_day: number;
+  expenses: Expense[];
+}
+
+export interface PayStatement {
+  id: string;
+  kid_id: string;
+  /** First day of the month the pay is for. */
+  pay_month: ISODate;
+  paid_on: ISODate;
+  gross_cents: number;
+  taxes: PayLine[];
+  expenses: PayLine[];
+  net_cents: number;
+  created_at: string;
+}
+
 export type RequestStatus = "pending" | "approved" | "denied" | "cancelled";
 
 export interface WithdrawalRequest {
@@ -80,11 +104,17 @@ export interface FamilyData {
   transactions: TransactionRow[];
   withdrawalRequests: WithdrawalRequest[];
   kidsWithPin: string[];
+  payPlans: PayPlan[];
+  /** Newest first. */
+  payStatements: PayStatement[];
 }
 
 export type KidTemplate = Pick<Kid, "name" | "avatar" | "mode" | "intro_monthly_rate" | "intro_months" | "ongoing_monthly_rate">;
 
-export type FamilySettings = Pick<Family, "name" | "time_zone" | "regular_bank_apy" | "cd_bonus_monthly_rate" | "loan_monthly_rate">;
+export type FamilySettings = Pick<
+  Family,
+  "name" | "time_zone" | "regular_bank_apy" | "cd_bonus_monthly_rate" | "loan_monthly_rate" | "tax_brackets"
+>;
 
 export interface NewTransaction {
   kid_id: string;
