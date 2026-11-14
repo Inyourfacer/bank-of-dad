@@ -1,5 +1,23 @@
 import type { DuePaycheck } from "./payroll";
-import type { FamilyData, FamilySettings, KidSignInResult, KidTemplate, Member, NewTransaction, PayPlan, PinStatus, Role } from "./types";
+import type {
+  FamilyData,
+  FamilySettings,
+  Jar,
+  KidSignInResult,
+  KidTemplate,
+  Member,
+  NewTransaction,
+  PayPlan,
+  PinStatus,
+  Role,
+} from "./types";
+
+export interface NewGoal {
+  kid_id: string;
+  name: string;
+  emoji: string;
+  target_cents: number;
+}
 
 export interface SessionUser {
   id: string;
@@ -49,6 +67,15 @@ export interface BankApi {
   savePayPlan(plan: PayPlan): Promise<void>;
   /** Records a month's pay stub and deposits the take-home pay (parents). */
   postPaycheck(due: DuePaycheck): Promise<void>;
+
+  /** Parents: add to (positive) or take from (negative) a kid's Spend or Give jar. */
+  addJarEntry(kidId: string, jar: Jar, amountCents: number, note: string | null, occurredOn: string): Promise<void>;
+  deleteJarEntry(id: string): Promise<void>;
+  /** Kid on the tablet: move Spend jar money into savings. */
+  moveToSavings(kidId: string, pin: string, cents: number): Promise<PinStatus>;
+  /** Parents add goals directly; kids pass their PIN. */
+  addGoal(goal: NewGoal, pin?: string): Promise<PinStatus>;
+  removeGoal(kidId: string, goalId: string, pin?: string): Promise<PinStatus>;
 }
 
 /** What to tell a kid when a PIN check fails. */

@@ -95,3 +95,25 @@ export function computePaycheck(grossCents: number, brackets: TaxBracket[], expe
     netCents: Math.max(0, grossCents - taxCents - expenseCents),
   };
 }
+
+export interface Split {
+  save_pct: number;
+  spend_pct: number;
+  give_pct: number;
+}
+
+export interface SplitCents {
+  saveCents: number;
+  spendCents: number;
+  giveCents: number;
+}
+
+export const DEFAULT_SPLIT: Split = { save_pct: 50, spend_pct: 40, give_pct: 10 };
+
+/** Splits take-home pay into Save / Spend / Give. Savings gets any rounding cent. */
+export function splitTakeHome(netCents: number, split: Split): SplitCents {
+  const spendCents = Math.round((netCents * split.spend_pct) / 100);
+  // Never let rounding take more than what's left after Spend.
+  const giveCents = Math.min(Math.round((netCents * split.give_pct) / 100), netCents - spendCents);
+  return { saveCents: netCents - spendCents - giveCents, spendCents, giveCents };
+}

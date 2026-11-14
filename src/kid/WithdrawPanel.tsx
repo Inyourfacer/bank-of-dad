@@ -4,7 +4,9 @@ import { pinMessage } from "../data/api";
 import { useApp } from "../data/AppContext";
 import { keepItValue } from "../data/kidProjection";
 import type { Kid, RatePeriodRow } from "../data/types";
-import { dollarsToCents, formatCents } from "../lib/format";
+import { dollarsToCents, formatCents, formatMonthYear } from "../lib/format";
+import { monthsBetween } from "../data/goals";
+import { useKidMoney } from "../data/useGoals";
 import type { DemoApi } from "../data/demoApi";
 import { navigate } from "../lib/router";
 import { useKidSession } from "./KidSession";
@@ -30,6 +32,20 @@ export function WithdrawPanel({ kid, rates, availableCents, simple, onClose }: P
   const cents = dollarsToCents(amount);
   const tooMuch = cents > availableCents;
   const [oneYear, fiveYears] = keepItValue(cents, rates, today, [1, 5]);
+  const money = useKidMoney(kid, tooMuch ? 0 : cents);
+  // The first goal not reached yet, and how this withdrawal would delay it.
+  const goalHit = money?.goals.find((g) => !g.projection.reached && g.afterWithdraw);
+  let goalNote: string | null = null;
+  if (goalHit && goalHit.afterWithdraw) {
+    const { goal, projection: before, afterWithdraw: after } = goalHit;
+    const name = `${goal.emoji} ${goal.name}`;
+    if (before.byDate && after.byDate && after.byDate > before.byDate) {
+      const months = monthsBetween(before.byDate, after.byDate);
+      goalNote = `It would push your ${name} goal back about ${months} month${months === 1 ? "" : "s"}, from ${formatMonthYear(before.byDate)} to ${formatMonthYear(after.byDate)}.`;
+    } else if (before.byDate && !after.byDate) {
+      goalNote = `Your ${name} goal would be out of reach without saving more.`;
+    }
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -120,6 +136,7 @@ export function WithdrawPanel({ kid, rates, availableCents, simple, onClose }: P
               <span className="hint">in 5 years</span>
             </div>
           </div>
+          {goalNote && <p className="goal-impact">{goalNote}</p>}
         </div>
       )}
 

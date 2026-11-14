@@ -55,6 +55,11 @@ Each phase ends with something usable. See [DESIGN.md](DESIGN.md) for the detail
   for kids (Standard and Junior); "Pay now" for parents; the daily job pays on
   payday. Take-home only is deposited (default $7.20).
 
+## Teaching features (section 2)
+- [x] Save / Spend / Give jars and savings goals
+- [ ] CDs (locked savings) and loans from Dad
+- [ ] Lessons that unlock, rate-change announcements, "start now vs. later" simulator
+
 ## Phase 5: Polish + Junior mode
 - Simulator comparison mode (side-by-side scenarios).
 - Junior mode visuals (savings jar or tree), Payday celebration,

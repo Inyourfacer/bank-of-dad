@@ -1,5 +1,5 @@
 import type { ISODate } from "../engine/dates";
-import type { Expense, PayLine, TaxBracket } from "../engine/paycheck";
+import type { Expense, PayLine, Split, TaxBracket } from "../engine/paycheck";
 
 export type Role = "parent" | "device";
 export type KidMode = "junior" | "standard";
@@ -52,7 +52,7 @@ export interface TransactionRow {
   created_at: string;
 }
 
-export interface PayPlan {
+export interface PayPlan extends Split {
   kid_id: string;
   enabled: boolean;
   salary_cents: number;
@@ -71,6 +71,34 @@ export interface PayStatement {
   taxes: PayLine[];
   expenses: PayLine[];
   net_cents: number;
+  /** How the take-home was split (null on older stubs: all saved). */
+  save_cents: number | null;
+  spend_cents: number | null;
+  give_cents: number | null;
+  created_at: string;
+}
+
+export type Jar = "spend" | "give";
+
+export interface JarEntry {
+  id: string;
+  kid_id: string;
+  jar: Jar;
+  /** Positive adds to the jar, negative takes from it. */
+  amount_cents: number;
+  occurred_on: ISODate;
+  note: string | null;
+  /** Set for payday entries (removed with their stub, not on their own). */
+  statement_id: string | null;
+  created_at: string;
+}
+
+export interface SavingsGoal {
+  id: string;
+  kid_id: string;
+  name: string;
+  emoji: string;
+  target_cents: number;
   created_at: string;
 }
 
@@ -107,6 +135,8 @@ export interface FamilyData {
   payPlans: PayPlan[];
   /** Newest first. */
   payStatements: PayStatement[];
+  jarEntries: JarEntry[];
+  goals: SavingsGoal[];
 }
 
 export type KidTemplate = Pick<Kid, "name" | "avatar" | "mode" | "intro_monthly_rate" | "intro_months" | "ongoing_monthly_rate">;

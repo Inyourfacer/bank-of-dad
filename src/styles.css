@@ -1632,3 +1632,132 @@ table th {
 .stub-details[open] > summary > span:first-child::before {
   transform: rotate(90deg);
 }
+
+/* ---------- Jars and goals ---------- */
+.jar-tiles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.jar-tiles li {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--jar) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--jar) 35%, var(--border));
+  text-align: center;
+}
+.jar-emoji {
+  font-size: 1.4rem;
+  line-height: 1.2;
+}
+.jar-tiles.big .jar-emoji {
+  font-size: 2rem;
+}
+.jar-label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--text-secondary);
+}
+.jar-amount {
+  font-size: clamp(1rem, 4vw, 1.25rem);
+  font-weight: 750;
+}
+.jar-tiles.big .jar-amount {
+  font-size: clamp(1.2rem, 5vw, 1.6rem);
+}
+.split-line {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.split-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.move-form {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.move-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+}
+.goals {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+.goal {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+.goal-emoji {
+  font-size: 1.8rem;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.goal-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.goal-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.goal-amounts {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.goal-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+.goal-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--pay-keep);
+}
+.goal-when {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.goal-when.reached {
+  color: var(--good-ink);
+  font-weight: 650;
+}
+.goal-impact {
+  margin: 10px 0 0 !important;
+  font-weight: 600;
+}
+@media (max-width: 420px) {
+  .split-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

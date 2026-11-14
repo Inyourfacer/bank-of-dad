@@ -27,10 +27,12 @@ export function forecastLiability(data: FamilyData, today: string): KidForecast[
     const transactions = data.transactions.filter((t) => t.kid_id === kid.id);
     const run = (months: number) =>
       kidWhatIf({ kid: { account_opened_on: kid.account_opened_on ?? today }, rates, transactions, today, months, bankApy: 0 });
+    // Spend and Give jars are owed too; they don't earn interest.
+    const jars = (data.jarEntries ?? []).filter((j) => j.kid_id === kid.id).reduce((t, j) => t + j.amount_cents, 0);
     return {
       kid,
-      nowCents: run(1).now.balanceCents,
-      futureCents: FORECAST_YEARS.map((y) => run(y * 12).scenario.balanceCents),
+      nowCents: run(1).now.balanceCents + jars,
+      futureCents: FORECAST_YEARS.map((y) => run(y * 12).scenario.balanceCents + jars),
     };
   });
 }

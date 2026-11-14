@@ -176,6 +176,21 @@ leave **$7.20**, inside the $5–$10 target.
   records the stub and the deposit together; deleting that deposit this month
   removes the stub so it can be paid again.
 
+## 4c. Save / Spend / Give jars and goals
+
+- **Payday split:** take-home pay goes three ways per the kid's pay plan
+  (default 50 / 40 / 10): **Save** into the account (earns interest), and the
+  **Spend** and **Give** jars (no interest, which is the lesson). $7.20 becomes
+  $3.60 / $2.88 / $0.72; rounding cents go to Save.
+- **Kids** see all three jars and can move Spend money into Savings
+  themselves (PIN re-checked). **Parents** record spending and giving (and can
+  add to a jar) and hand over the cash. A jar can't go below zero. The family's
+  "Bank of Dad owes" totals include the jars.
+- **Goals:** up to 3 per kid ("🚲 New bike, $120"), set by the kid on the
+  tablet or by a parent. Each shows progress against Savings and a projected
+  month, assuming the payday Save amount and no withdrawals. When asking to
+  take money out, kids see how much later their next goal would be.
+
 ## 5. Parent view
 
 - **Family dashboard:** all 5 kids at a glance, pending withdrawal requests,
@@ -337,9 +352,14 @@ transactions  (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
                amount_cents, occurred_on, note,
                period_month null,  -- interest only; unique(kid_id, period_month)
                created_by, created_at)
-pay_plans     (kid_id, enabled, salary_cents, pay_day 1-28, expenses jsonb)
+pay_plans     (kid_id, enabled, salary_cents, pay_day 1-28, expenses jsonb,
+               save_pct, spend_pct, give_pct)
 pay_statements (id, kid_id, pay_month, paid_on, gross_cents, taxes jsonb,
-               expenses jsonb, net_cents, transaction_id)  -- unique per month
+               expenses jsonb, net_cents, save/spend/give_cents,
+               transaction_id)  -- unique per month
+jar_entries   (id, kid_id, jar[spend|give], amount_cents, occurred_on, note,
+               statement_id)  -- never below zero
+savings_goals (id, kid_id, name, emoji, target_cents)  -- up to 3 per kid
 withdrawal_requests (id, kid_id, amount_cents, reason,
                status[pending|approved|denied|cancelled], decided_by, decided_at,
                transaction_id)  -- functions only
@@ -349,7 +369,8 @@ Functions: `create_family`, `add_family_member`, `remove_family_member`,
 `set_kid_pin`, `kids_with_pin`, `verify_kid_pin`, `open_account`,
 `kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`,
 `apply_family_config` (service role only), `post_paycheck` (parents and the
-daily job).
+daily job; splits Save / Spend / Give), `move_to_savings`, `kid_add_goal`,
+`kid_remove_goal`.
 Every kid action re-checks that kid's PIN on the server, so a sibling holding
 the family device can't act for someone else.
 
@@ -379,4 +400,5 @@ All money is stored as **integer cents**.
 | Paydays | Posted by one daily GitHub job, which also keeps Supabase awake |
 | Family setup | A YAML config in a GitHub secret + a "Set up family" job; the app's own screens still work for later changes |
 | Pay and expenses | Pretend $100 salary minus progressive tax and bills; only the take-home ($5–$10) is deposited |
+| Jars and goals | Take-home split 50/40/10 into Save (interest) / Spend / Give; up to 3 goals with projected dates |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |
