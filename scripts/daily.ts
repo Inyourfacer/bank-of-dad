@@ -44,7 +44,7 @@ async function main() {
     fetchAll<{ id: string; family_id: string; account_opened_on: string | null }>(db, "kids", "id, family_id, account_opened_on"),
     fetchAll(db, "rate_periods", "id, kid_id, effective_from, monthly_rate"),
     fetchAll(db, "transactions", "id, kid_id, kind, amount_cents, occurred_on, note, created_at, period_month"),
-    fetchAll<PayPlan>(db, "pay_plans", "kid_id, enabled, salary_cents, pay_day, expenses"),
+    fetchAll<PayPlan>(db, "pay_plans", "kid_id, enabled, salary_cents, pay_day, expenses, save_pct, spend_pct, give_pct"),
     fetchAll<{ kid_id: string; pay_month: string }>(db, "pay_statements", "kid_id, pay_month"),
   ]);
   console.log(`Checked ${families.length} famil${families.length === 1 ? "y" : "ies"}, ${kids.length} kid account(s).`);
@@ -95,6 +95,9 @@ async function main() {
       p_taxes: due.paycheck.taxes,
       p_expenses: due.paycheck.expenses,
       p_net_cents: due.paycheck.netCents,
+      p_save_cents: due.split.saveCents,
+      p_spend_cents: due.split.spendCents,
+      p_give_cents: due.split.giveCents,
     });
     if (error && /already paid/i.test(error.message)) {
       console.log(`Already paid ${label}`);

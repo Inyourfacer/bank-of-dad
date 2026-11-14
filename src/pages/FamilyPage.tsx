@@ -17,7 +17,9 @@ export function FamilyPage() {
   if (!data) return null;
 
   const all = [...accounts.values()];
-  const owed = all.reduce((s, a) => s + a.balanceCents, 0);
+  // Savings plus the Spend and Give jars: all of it is owed to the kids.
+  const jars = data.jarEntries.reduce((s, j) => s + j.amount_cents, 0);
+  const owed = all.reduce((s, a) => s + a.balanceCents, 0) + jars;
   const accruing = all.reduce((s, a) => s + a.accruingCents, 0);
   const paid = all.reduce((s, a) => s + a.interestPaidCents, 0);
   const missingPin = data.kids.filter((k) => !data.kidsWithPin.includes(k.id));
@@ -42,7 +44,10 @@ export function FamilyPage() {
         <div className="panel tile">
           <h2>The Bank of Dad owes</h2>
           <p className="tile-number">{formatCents(owed)}</p>
-          <p className="hint">across {data.kids.length} account{data.kids.length === 1 ? "" : "s"}</p>
+          <p className="hint">
+            across {data.kids.length} account{data.kids.length === 1 ? "" : "s"}
+            {jars > 0 ? `, including ${formatCents(jars)} in Spend and Give jars` : ""}
+          </p>
         </div>
         <div className="panel tile">
           <h2>Interest this month</h2>

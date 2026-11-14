@@ -1,3 +1,4 @@
+import { SplitLine } from "../components/Jars";
 import { PayBar, PayStub } from "../components/PayStub";
 import { useApp } from "../data/AppContext";
 import { paycheckFor, paydayFor } from "../data/payroll";
@@ -40,10 +41,13 @@ export function KidPay({ kid }: { kid: Kid }) {
           payMonth={latest.pay_month}
           paidOn={latest.paid_on}
           explain
-          netLabel="You keep (deposited)"
+          netLabel="You keep"
         />
       ) : (
         next && <PayStub stub={next.paycheck} explain netLabel="You'll keep" />
+      )}
+      {latest && latest.save_cents !== null && (
+        <SplitLine save={latest.save_cents} spend={latest.spend_cents ?? 0} give={latest.give_cents ?? 0} />
       )}
       {older.length > 0 && (
         <details className="stub-details">

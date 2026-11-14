@@ -3,13 +3,23 @@ import { DEFAULT_EXPENSES, DEFAULT_TAX_BRACKETS } from "../engine/paycheck";
 import { duePaycheck, paydayFor, planPayroll } from "./payroll";
 import type { PayPlan } from "./types";
 
-const plan: PayPlan = { kid_id: "k", enabled: true, salary_cents: 10000, pay_day: 1, expenses: DEFAULT_EXPENSES };
+const plan: PayPlan = {
+  kid_id: "k",
+  enabled: true,
+  salary_cents: 10000,
+  pay_day: 1,
+  expenses: DEFAULT_EXPENSES,
+  save_pct: 50,
+  spend_pct: 40,
+  give_pct: 10,
+};
 
 describe("payroll", () => {
   it("pays on payday with the default $7.20 take-home", () => {
     const due = duePaycheck(plan, DEFAULT_TAX_BRACKETS, [], "2027-03-01");
     expect(due).toMatchObject({ kid_id: "k", payMonth: "2027-03-01", paidOn: "2027-03-01" });
     expect(due!.paycheck.netCents).toBe(720);
+    expect(due!.split).toEqual({ saveCents: 360, spendCents: 288, giveCents: 72 });
   });
 
   it("waits for payday, then pays later in the month if missed", () => {

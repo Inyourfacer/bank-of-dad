@@ -2,6 +2,7 @@ import { useState } from "react";
 import { RateComparison } from "../components/RateComparison";
 import type { Kid } from "../data/types";
 import { formatCents, formatPercent } from "../lib/format";
+import { KidGoals, KidJars } from "./KidJars";
 import { KidPay } from "./KidPay";
 import { kidDadRates } from "./kidRates";
 import { KidBar, PaydayNote, RecentActivity, RequestList, WelcomeBanner } from "./parts";
@@ -41,6 +42,8 @@ export function KidHome({ kid }: { kid: Kid }) {
 
       <div className="kid-layout">
         <div className="stack">
+          <KidJars kid={kid} savingsCents={d.account.balanceCents} />
+          <KidGoals kid={kid} />
           <WhatIfPanel kid={kid} rates={d.rates} transactions={d.transactions} today={d.today} bankApy={d.bankApy} />
         </div>
         <div className="stack">

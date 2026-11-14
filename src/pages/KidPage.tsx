@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ErrorMessage, Field } from "../components/Field";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { KidForm } from "../components/KidForm";
+import { JarsAdmin } from "../components/JarsAdmin";
 import { PayPlanPanel } from "../components/PayPlanPanel";
 import { RequestReview } from "../components/RequestReview";
 import type { KidAccount } from "../data/account";
@@ -65,6 +66,7 @@ export function KidPage({ kidId }: { kidId: string }) {
           <BalancePanel kid={kid} account={account} />
           <RecordMoney kid={kid} account={account} />
           <PayPlanPanel kid={kid} />
+          <JarsAdmin kid={kid} savingsCents={account.balanceCents} />
           <Activity account={account} />
         </div>
         <div className="stack">

@@ -7,7 +7,7 @@
  */
 
 import { daysInMonth, startOfMonth, todayInZone } from "../engine/dates";
-import { type Paycheck, type TaxBracket, computePaycheck } from "../engine/paycheck";
+import { type Paycheck, type SplitCents, type TaxBracket, computePaycheck, splitTakeHome } from "../engine/paycheck";
 import type { PayPlan, PayStatement } from "./types";
 
 export interface DuePaycheck {
@@ -15,6 +15,8 @@ export interface DuePaycheck {
   payMonth: string;
   paidOn: string;
   paycheck: Paycheck;
+  /** Save / Spend / Give shares of the take-home pay. */
+  split: SplitCents;
 }
 
 /** This month's payday for a plan (clamped to the month's length). */
@@ -36,7 +38,8 @@ export function duePaycheck(plan: PayPlan, brackets: TaxBracket[], statements: P
   const paidOn = paydayFor(plan, today);
   if (today < paidOn) return null;
   if (statements.some((s) => s.kid_id === plan.kid_id && s.pay_month.slice(0, 10) === payMonth)) return null;
-  return { kid_id: plan.kid_id, payMonth, paidOn, paycheck: paycheckFor(plan, brackets) };
+  const paycheck = paycheckFor(plan, brackets);
+  return { kid_id: plan.kid_id, payMonth, paidOn, paycheck, split: splitTakeHome(paycheck.netCents, plan) };
 }
 
 export interface PayrollInput {

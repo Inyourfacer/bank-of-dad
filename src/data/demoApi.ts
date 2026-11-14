@@ -5,12 +5,13 @@
  */
 
 import { type ISODate, addDays, addMonths, startOfMonth, todayInZone } from "../engine/dates";
-import { DEFAULT_EXPENSES, DEFAULT_TAX_BRACKETS, type Expense } from "../engine/paycheck";
+import { DEFAULT_EXPENSES, DEFAULT_SPLIT, DEFAULT_TAX_BRACKETS, type Expense, splitTakeHome } from "../engine/paycheck";
 import { ApiError, type BankApi, type SessionUser } from "./api";
 import { paycheckFor, paydayFor } from "./payroll";
 import type {
   Family,
   FamilyData,
+  JarEntry,
   Kid,
   Member,
   PayPlan,
@@ -18,6 +19,7 @@ import type {
   PinStatus,
   RatePeriodRow,
   Role,
+  SavingsGoal,
   TransactionRow,
   WithdrawalRequest,
 } from "./types";
@@ -37,6 +39,8 @@ interface DemoDb {
   requests: WithdrawalRequest[];
   payPlans: PayPlan[];
   payStatements: DemoStatement[];
+  jarEntries: JarEntry[];
+  goals: SavingsGoal[];
   user: (SessionUser & { role: Role }) | null;
 }
 
@@ -117,30 +121,33 @@ function seed(): DemoDb {
     { name: "Insurance", cents: 300 },
   ];
   const payPlans: PayPlan[] = [
-    { kid_id: ava.id, enabled: true, salary_cents: 10000, pay_day: 1, expenses: DEFAULT_EXPENSES },
-    { kid_id: ben.id, enabled: true, salary_cents: 10000, pay_day: 5, expenses: DEFAULT_EXPENSES },
-    { kid_id: cora.id, enabled: true, salary_cents: 5000, pay_day: 1, expenses: coraBills },
+    { kid_id: ava.id, enabled: true, salary_cents: 10000, pay_day: 1, expenses: DEFAULT_EXPENSES, ...DEFAULT_SPLIT },
+    { kid_id: ben.id, enabled: true, salary_cents: 10000, pay_day: 5, expenses: DEFAULT_EXPENSES, ...DEFAULT_SPLIT },
+    { kid_id: cora.id, enabled: true, salary_cents: 5000, pay_day: 1, expenses: coraBills, ...DEFAULT_SPLIT },
   ];
   // Past pay stubs (and this month's for Ava and Cora). Ben's is left for
   // Dad to pay with "Pay now".
   const payStatements: DemoStatement[] = [];
+  const jarEntries: JarEntry[] = [];
   const stub = (plan: PayPlan, monthsAgo: number) => {
     const monthDay = addMonths(startOfMonth(today), -monthsAgo);
     const paidOn = paydayFor(plan, monthDay);
     if (paidOn > today) return;
     const pc = paycheckFor(plan, family.tax_brackets);
+    const split = splitTakeHome(pc.netCents, plan);
     const txn: TransactionRow = {
       id: id("txn"),
       kid_id: plan.kid_id,
       kind: "deposit",
-      amount_cents: pc.netCents,
+      amount_cents: split.saveCents,
       occurred_on: paidOn,
       note: "Paycheck",
       created_at: new Date().toISOString(),
     };
     transactions.push(txn);
+    const statementId = id("pay");
     payStatements.push({
-      id: id("pay"),
+      id: statementId,
       kid_id: plan.kid_id,
       pay_month: startOfMonth(monthDay),
       paid_on: paidOn,
@@ -148,13 +155,27 @@ function seed(): DemoDb {
       taxes: pc.taxes,
       expenses: pc.expenses,
       net_cents: pc.netCents,
+      save_cents: split.saveCents,
+      spend_cents: split.spendCents,
+      give_cents: split.giveCents,
       created_at: new Date().toISOString(),
       transaction_id: txn.id,
     });
+    for (const [jar, cents] of [["spend", split.spendCents], ["give", split.giveCents]] as const) {
+      if (cents > 0) {
+        jarEntries.push({ id: id("jar"), kid_id: plan.kid_id, jar, amount_cents: cents, occurred_on: paidOn, note: "Paycheck", statement_id: statementId, created_at: new Date().toISOString() });
+      }
+    }
   };
   [2, 1, 0].forEach((m) => stub(payPlans[0], m));
   stub(payPlans[1], 1);
   stub(payPlans[2], 0);
+  // Ava already spent a little; goals to aim for.
+  jarEntries.push({ id: id("jar"), kid_id: ava.id, jar: "spend", amount_cents: -200, occurred_on: addDays(today, -3), note: "Stickers", statement_id: null, created_at: new Date().toISOString() });
+  const goals: SavingsGoal[] = [
+    { id: id("goal"), kid_id: ava.id, name: "New bike", emoji: "🚲", target_cents: 12000, created_at: new Date().toISOString() },
+    { id: id("goal"), kid_id: cora.id, name: "Plush unicorn", emoji: "🦄", target_cents: 2500, created_at: new Date().toISOString() },
+  ];
 
   return {
     family,
@@ -181,6 +202,8 @@ function seed(): DemoDb {
     ],
     payPlans,
     payStatements,
+    jarEntries,
+    goals,
     user: null,
   };
 }
@@ -202,6 +225,9 @@ function load(): DemoDb {
       db.pinFails ??= {};
       db.payPlans ??= [];
       db.payStatements ??= [];
+      db.jarEntries ??= [];
+      db.goals ??= [];
+      for (const p of db.payPlans) Object.assign(p, { ...DEFAULT_SPLIT, ...p });
       db.family.tax_brackets ??= DEFAULT_TAX_BRACKETS;
       fillMockPins(db);
       return db;
@@ -322,7 +348,11 @@ export function createDemoApi(): DemoApi {
         kidsWithPin: Object.keys(db.pins),
         withdrawalRequests: [...db.requests].sort((a, b) => b.created_at.localeCompare(a.created_at)),
         payPlans: db.payPlans,
-        payStatements: [...db.payStatements].sort((a, b) => b.pay_month.localeCompare(a.pay_month)),
+        payStatements: [...db.payStatements]
+          .map((st) => ({ ...st, save_cents: st.save_cents ?? null, spend_cents: st.spend_cents ?? null, give_cents: st.give_cents ?? null }))
+          .sort((a, b) => b.pay_month.localeCompare(a.pay_month)),
+        jarEntries: [...db.jarEntries].sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)),
+        goals: db.goals,
       });
     },
     async createFamily() {
@@ -368,6 +398,8 @@ export function createDemoApi(): DemoApi {
       db.requests = db.requests.filter((r) => r.kid_id !== kidId);
       db.payPlans = db.payPlans.filter((p) => p.kid_id !== kidId);
       db.payStatements = db.payStatements.filter((p) => p.kid_id !== kidId);
+      db.jarEntries = db.jarEntries.filter((j) => j.kid_id !== kidId);
+      db.goals = db.goals.filter((g) => g.kid_id !== kidId);
       delete db.pins[kidId];
       changed();
     },
@@ -396,7 +428,9 @@ export function createDemoApi(): DemoApi {
         throw new ApiError("That month's Payday is final. Use a date in the current month, or record an adjustment.");
       }
       db.transactions = db.transactions.filter((x) => x.id !== txnId);
+      const gone = db.payStatements.filter((st) => st.transaction_id === txnId).map((st) => st.id);
       db.payStatements = db.payStatements.filter((st) => st.transaction_id !== txnId);
+      db.jarEntries = db.jarEntries.filter((j) => !j.statement_id || !gone.includes(j.statement_id));
       changed();
     },
     async addRatePeriod(kidId, effectiveFrom, monthlyRate) {
@@ -499,14 +533,18 @@ export function createDemoApi(): DemoApi {
         throw new ApiError("Only this month's pay can be paid, on or after payday.");
       }
       const pc = due.paycheck;
+      const split = due.split;
+      if (split.saveCents + split.spendCents + split.giveCents !== pc.netCents) {
+        throw new ApiError("The Save / Spend / Give split doesn't add up to the take-home pay.");
+      }
       let txnId: string | null = null;
-      if (pc.netCents > 0) {
+      if (split.saveCents > 0) {
         txnId = id("txn");
         db.transactions.push({
           id: txnId,
           kid_id: due.kid_id,
           kind: "deposit",
-          amount_cents: pc.netCents,
+          amount_cents: split.saveCents,
           occurred_on: due.paidOn,
           note: "Paycheck",
           created_at: new Date().toISOString(),
@@ -521,10 +559,70 @@ export function createDemoApi(): DemoApi {
         taxes: pc.taxes,
         expenses: pc.expenses,
         net_cents: pc.netCents,
+        save_cents: split.saveCents,
+        spend_cents: split.spendCents,
+        give_cents: split.giveCents,
         created_at: new Date().toISOString(),
         transaction_id: txnId,
       });
+      const statementId = db.payStatements[db.payStatements.length - 1].id;
+      for (const [jar, cents] of [["spend", split.spendCents], ["give", split.giveCents]] as const) {
+        if (cents > 0) {
+          db.jarEntries.push({ id: id("jar"), kid_id: due.kid_id, jar, amount_cents: cents, occurred_on: due.paidOn, note: "Paycheck", statement_id: statementId, created_at: new Date().toISOString() });
+        }
+      }
       changed();
+    },
+
+    async addJarEntry(kidId, jar, amountCents, note, occurredOn) {
+      requireParent();
+      kidById(kidId);
+      if (amountCents === 0) throw new ApiError("Enter an amount.");
+      const bal = db.jarEntries.filter((j) => j.kid_id === kidId && j.jar === jar).reduce((t, j) => t + j.amount_cents, 0);
+      if (bal + amountCents < 0) throw new ApiError(`There's only $${(bal / 100).toFixed(2)} in the ${jar === "spend" ? "Spend" : "Give"} jar.`);
+      db.jarEntries.push({ id: id("jar"), kid_id: kidId, jar, amount_cents: amountCents, occurred_on: occurredOn, note, statement_id: null, created_at: new Date().toISOString() });
+      changed();
+    },
+    async deleteJarEntry(entryId) {
+      requireParent();
+      const e = db.jarEntries.find((j) => j.id === entryId);
+      if (e?.statement_id) throw new ApiError("Payday entries go away with their pay stub.");
+      db.jarEntries = db.jarEntries.filter((j) => j.id !== entryId);
+      changed();
+    },
+    async moveToSavings(kidId, pin, cents) {
+      const status = checkPin(kidId, pin);
+      if (status !== "ok") return status;
+      if (cents <= 0) throw new ApiError("Enter an amount.");
+      const bal = db.jarEntries.filter((j) => j.kid_id === kidId && j.jar === "spend").reduce((t, j) => t + j.amount_cents, 0);
+      if (cents > bal) throw new ApiError(`There's only $${(bal / 100).toFixed(2)} in the Spend jar.`);
+      const now = new Date().toISOString();
+      db.jarEntries.push({ id: id("jar"), kid_id: kidId, jar: "spend", amount_cents: -cents, occurred_on: today(), note: "Moved to savings", statement_id: null, created_at: now });
+      db.transactions.push({ id: id("txn"), kid_id: kidId, kind: "deposit", amount_cents: cents, occurred_on: today(), note: "From my Spend jar", created_at: now });
+      changed();
+      return status;
+    },
+    async addGoal(goal, pin) {
+      if (pin === undefined) requireParent();
+      else {
+        const status = checkPin(goal.kid_id, pin);
+        if (status !== "ok") return status;
+      }
+      if (db.goals.filter((g) => g.kid_id === goal.kid_id).length >= 3) throw new ApiError("Up to 3 goals at a time. Remove one first.");
+      if (!goal.name.trim() || goal.target_cents <= 0) throw new ApiError("Give the goal a name and an amount.");
+      db.goals.push({ ...goal, name: goal.name.trim(), id: id("goal"), created_at: new Date().toISOString() });
+      changed();
+      return "ok";
+    },
+    async removeGoal(kidId, goalId, pin) {
+      if (pin === undefined) requireParent();
+      else {
+        const status = checkPin(kidId, pin);
+        if (status !== "ok") return status;
+      }
+      db.goals = db.goals.filter((g) => !(g.id === goalId && g.kid_id === kidId));
+      changed();
+      return "ok";
     },
   };
   return api;

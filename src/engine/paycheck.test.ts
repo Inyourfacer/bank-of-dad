@@ -6,6 +6,8 @@ import {
   TARGET_NET_CENTS,
   computePaycheck,
   computeTax,
+  DEFAULT_SPLIT,
+  splitTakeHome,
 } from "./paycheck";
 
 describe("computeTax", () => {
@@ -51,5 +53,24 @@ describe("computePaycheck", () => {
     const p = computePaycheck(10000, [], [{ name: "Phone", cents: 0 }]);
     expect(p.expenses).toEqual([]);
     expect(p.netCents).toBe(10000);
+  });
+});
+
+describe("splitTakeHome", () => {
+  it("splits $7.20 50 / 40 / 10", () => {
+    expect(splitTakeHome(720, DEFAULT_SPLIT)).toEqual({ saveCents: 360, spendCents: 288, giveCents: 72 });
+  });
+  it("always adds up, with rounding going to savings", () => {
+    for (const net of [1, 7, 333, 999, 1001]) {
+      const s = splitTakeHome(net, { save_pct: 33, spend_pct: 33, give_pct: 34 });
+      expect(s.saveCents + s.spendCents + s.giveCents).toBe(net);
+      expect(s.saveCents).toBeGreaterThanOrEqual(0);
+    }
+  });
+  it("never goes negative when two halves both round up", () => {
+    expect(splitTakeHome(1, { save_pct: 0, spend_pct: 50, give_pct: 50 })).toEqual({ saveCents: 0, spendCents: 1, giveCents: 0 });
+  });
+  it("can save everything", () => {
+    expect(splitTakeHome(720, { save_pct: 100, spend_pct: 0, give_pct: 0 })).toEqual({ saveCents: 720, spendCents: 0, giveCents: 0 });
   });
 });
