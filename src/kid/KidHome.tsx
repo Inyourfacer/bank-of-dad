@@ -2,7 +2,8 @@ import { useState } from "react";
 import { RateComparison } from "../components/RateComparison";
 import type { Kid } from "../data/types";
 import { formatCents, formatPercent } from "../lib/format";
-import { KidGoals, KidJars } from "./KidJars";
+import { type Act, CdsPanel, LoanPanel } from "../components/CdsLoans";
+import { KidGoals, KidJars, useKidAction } from "./KidJars";
 import { KidPay } from "./KidPay";
 import { kidDadRates } from "./kidRates";
 import { KidBar, PaydayNote, RecentActivity, RequestList, WelcomeBanner } from "./parts";
@@ -15,6 +16,13 @@ export function KidHome({ kid }: { kid: Kid }) {
   const d = useKidData(kid);
   const [withdrawing, setWithdrawing] = useState(false);
   const dad = kidDadRates(d.rates, d.today);
+  const cdAction = useKidAction();
+  const loanAction = useKidAction();
+  /** Kid actions re-check the PIN; a void result means "ok". */
+  const actWith =
+    (k: ReturnType<typeof useKidAction>): Act =>
+    (fn) =>
+      k.run(async (api, pin) => (await fn(api, pin)) ?? "ok");
 
   return (
     <div className="stack-lg">
@@ -49,6 +57,8 @@ export function KidHome({ kid }: { kid: Kid }) {
         <div className="stack">
           <RequestList kid={kid} requests={d.requests} />
           <KidPay kid={kid} />
+          <CdsPanel kid={kid} savingsCents={d.account.balanceCents} act={actWith(cdAction)} busy={cdAction.busy} error={cdAction.error} asKid />
+          <LoanPanel kid={kid} savingsCents={d.account.balanceCents} act={actWith(loanAction)} busy={loanAction.busy} error={loanAction.error} asKid />
           <div className="panel">
             <RateComparison dad={dad} bankApy={d.bankApy} title="Your rate vs. a regular bank" headlineIndex={dad.length - 1} />
           </div>

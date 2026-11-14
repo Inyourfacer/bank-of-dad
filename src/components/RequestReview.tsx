@@ -1,24 +1,62 @@
 import { useAction, useApp } from "../data/AppContext";
-import type { WithdrawalRequest } from "../data/types";
+import type { Loan, WithdrawalRequest } from "../data/types";
 import { useAccounts } from "../data/useAccounts";
 import { formatCents, formatDay } from "../lib/format";
 import { ErrorMessage } from "./Field";
 
 /** Pending withdrawal requests with Approve / Deny, for parents. */
-export function RequestReview({ requests, showKid = true }: { requests: WithdrawalRequest[]; showKid?: boolean }) {
+export function RequestReview({
+  requests,
+  loans = [],
+  showKid = true,
+}: {
+  requests: WithdrawalRequest[];
+  loans?: Loan[];
+  showKid?: boolean;
+}) {
   const { data } = useApp();
   const accounts = useAccounts();
   const [run, busy, error] = useAction();
   const pending = requests.filter((r) => r.status === "pending");
-  if (!data || pending.length === 0) return null;
+  const pendingLoans = loans.filter((l) => l.status === "pending");
+  if (!data || pending.length + pendingLoans.length === 0) return null;
 
   return (
     <section className="panel stack attention" aria-labelledby="review-title">
       <h2 className="panel-title" id="review-title">
-        Waiting for you <span className="count">{pending.length}</span>
+        Waiting for you <span className="count">{pending.length + pendingLoans.length}</span>
       </h2>
       <ErrorMessage error={error} />
       <ul className="list">
+        {pendingLoans.map((l) => {
+          const kid = data.kids.find((k) => k.id === l.kid_id);
+          return (
+            <li key={l.id} className="list-row request-row">
+              {showKid && kid && (
+                <span className="avatar" aria-hidden="true">
+                  {kid.avatar}
+                </span>
+              )}
+              <span className="activity-main">
+                <strong>
+                  {showKid && kid ? `${kid.name}: ` : ""}borrow {formatCents(l.principal_cents)}
+                  {l.purpose ? ` for “${l.purpose}”` : ""}
+                </strong>
+                <span className="hint">
+                  Loan at {(Number(l.monthly_rate) * 100).toFixed(0)}% a month · asked {formatDay(l.created_at.slice(0, 10))}
+                </span>
+              </span>
+              <span className="request-actions">
+                <button type="button" className="btn btn-primary btn-sm" disabled={busy} onClick={() => void run((api) => api.decideLoan(l.id, true))}>
+                  Lend
+                </button>
+                <button type="button" className="btn btn-ghost btn-sm" disabled={busy} onClick={() => void run((api) => api.decideLoan(l.id, false))}>
+                  Deny
+                </button>
+              </span>
+            </li>
+          );
+        })}
         {pending.map((r) => {
           const kid = data.kids.find((k) => k.id === r.kid_id);
           const balance = accounts.get(r.kid_id)?.balanceCents ?? 0;
@@ -53,7 +91,7 @@ export function RequestReview({ requests, showKid = true }: { requests: Withdraw
           );
         })}
       </ul>
-      <p className="hint">Approving records the withdrawal today. Hand over the cash when you approve.</p>
+      <p className="hint">Approving records it today. Hand over the cash when you approve.</p>
     </section>
   );
 }

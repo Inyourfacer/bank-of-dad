@@ -36,6 +36,7 @@ say "Success. No rows returned".
 3. [`supabase/migrations/20261109000000_family_config.sql`](../supabase/migrations/20261109000000_family_config.sql)
 4. [`supabase/migrations/20261111000000_pay_and_expenses.sql`](../supabase/migrations/20261111000000_pay_and_expenses.sql)
 5. [`supabase/migrations/20261114000000_jars_and_goals.sql`](../supabase/migrations/20261114000000_jars_and_goals.sql)
+6. [`supabase/migrations/20261115000000_cds_and_loans.sql`](../supabase/migrations/20261115000000_cds_and_loans.sql)
 
 Already ran some of them earlier? Just run the ones you haven't, oldest first.
 
@@ -138,7 +139,8 @@ bills) leave $7.20, which is deposited into the kid's account on payday.
 tick **Only show what would be posted**, and run. The log should say how many
 families and kid accounts it checked. After that it runs by itself every day
 at 10:23 UTC: it posts each interest Payday once the month ends, pays each
-kid's salary on their payday, and keeps Supabase awake. Until it's set up, use
+kid's salary on their payday, pays out CDs that have matured, and keeps
+Supabase awake. Until it's set up, use
 **Pay now** on the kid's page.
 
 **Check the lockdown:** in Supabase, **Authentication → Users** should list

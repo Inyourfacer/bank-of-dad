@@ -1,3 +1,4 @@
+import { cdStatus } from "../engine/cd";
 import { addMonths } from "../engine/dates";
 import { kidWhatIf } from "./kidProjection";
 import type { FamilyData, Kid, RatePeriodRow } from "./types";
@@ -29,10 +30,14 @@ export function forecastLiability(data: FamilyData, today: string): KidForecast[
       kidWhatIf({ kid: { account_opened_on: kid.account_opened_on ?? today }, rates, transactions, today, months, bankApy: 0 });
     // Spend and Give jars are owed too; they don't earn interest.
     const jars = (data.jarEntries ?? []).filter((j) => j.kid_id === kid.id).reduce((t, j) => t + j.amount_cents, 0);
+    // Open CDs: what's locked now, and what they pay at maturity (back into savings).
+    const cds = (data.cds ?? []).filter((c) => c.kid_id === kid.id && c.status === "open");
+    const locked = cds.reduce((t, c) => t + c.principal_cents, 0);
+    const maturing = cds.reduce((t, c) => t + cdStatus(c, c.matures_on).maturityCents, 0);
     return {
       kid,
-      nowCents: run(1).now.balanceCents + jars,
-      futureCents: FORECAST_YEARS.map((y) => run(y * 12).scenario.balanceCents + jars),
+      nowCents: run(1).now.balanceCents + jars + locked,
+      futureCents: FORECAST_YEARS.map((y) => run(y * 12).scenario.balanceCents + jars + maturing),
     };
   });
 }

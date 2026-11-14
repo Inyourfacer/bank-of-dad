@@ -36,7 +36,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setStatus("signed-out");
         return;
       }
-      const d = await api.loadFamily();
+      let d = await api.loadFamily();
+      // Pay out any CD that has matured, then reload so balances include it.
+      if (d) {
+        const today = todayInZone(d.family.time_zone);
+        const matured = d.cds.filter((c) => c.status === "open" && c.matures_on <= today);
+        if (matured.length) {
+          for (const c of matured) await api.collectCd(c.id).catch(() => undefined);
+          d = await api.loadFamily();
+        }
+      }
       setData(d);
       setStatus(d ? "ready" : "no-family");
       setError(null);

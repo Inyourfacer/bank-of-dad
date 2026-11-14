@@ -25,7 +25,9 @@ function Shell() {
   const signedIn = status === "ready" || status === "no-family";
   const onSimulator = route === "/";
   const pending =
-    data?.me.role === "parent" ? data.withdrawalRequests.filter((r) => r.status === "pending").length : 0;
+    data?.me.role === "parent"
+      ? data.withdrawalRequests.filter((r) => r.status === "pending").length + data.loans.filter((l) => l.status === "pending").length
+      : 0;
 
   useEffect(() => {
     if (route === "/demo") enterDemo();

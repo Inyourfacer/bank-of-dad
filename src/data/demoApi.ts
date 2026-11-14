@@ -5,14 +5,18 @@
  */
 
 import { type ISODate, addDays, addMonths, startOfMonth, todayInZone } from "../engine/dates";
+import { cdStatus, fullMonthsBetween, grow, loanStatus } from "../engine/cd";
 import { DEFAULT_EXPENSES, DEFAULT_SPLIT, DEFAULT_TAX_BRACKETS, type Expense, splitTakeHome } from "../engine/paycheck";
 import { ApiError, type BankApi, type SessionUser } from "./api";
 import { paycheckFor, paydayFor } from "./payroll";
 import type {
+  Cd,
   Family,
   FamilyData,
   JarEntry,
   Kid,
+  Loan,
+  LoanPaymentRow,
   Member,
   PayPlan,
   PayStatement,
@@ -41,6 +45,9 @@ interface DemoDb {
   payStatements: DemoStatement[];
   jarEntries: JarEntry[];
   goals: SavingsGoal[];
+  cds: Cd[];
+  loans: Loan[];
+  loanPayments: LoanPaymentRow[];
   user: (SessionUser & { role: Role }) | null;
 }
 
@@ -204,8 +211,39 @@ function seed(): DemoDb {
     payStatements,
     jarEntries,
     goals,
+    ...seedCdsAndLoans(today, ava, ben, transactions),
     user: null,
   };
+}
+
+/** Ava has a CD two months in; Ben is paying off a small loan. */
+function seedCdsAndLoans(today: ISODate, ava: Kid, ben: Kid, transactions: TransactionRow[]) {
+  const opened = addMonths(today, -2);
+  transactions.push({ id: id("txn"), kid_id: ava.id, kind: "adjustment", amount_cents: -2000, occurred_on: opened, note: "Locked in a CD", created_at: new Date().toISOString() });
+  const cds: Cd[] = [
+    {
+      id: id("cd"),
+      kid_id: ava.id,
+      principal_cents: 2000,
+      base_monthly_rate: 0.01,
+      bonus_monthly_rate: 0.01,
+      term_months: 6,
+      opened_on: opened,
+      matures_on: addMonths(opened, 6),
+      status: "open",
+      closed_on: null,
+      payout_cents: null,
+    },
+  ];
+  const loanId = id("loan");
+  const started = addMonths(today, -1);
+  const loans: Loan[] = [
+    { id: loanId, kid_id: ben.id, principal_cents: 1500, monthly_rate: 0.03, purpose: "New video game", status: "active", started_on: started, created_at: new Date().toISOString() },
+  ];
+  const loanPayments: LoanPaymentRow[] = [
+    { id: id("lp"), loan_id: loanId, kid_id: ben.id, amount_cents: 300, paid_on: addDays(started, 10), source: "cash" },
+  ];
+  return { cds, loans, loanPayments };
 }
 
 function openingRates(k: Kid, openedOn: ISODate): RatePeriodRow[] {
@@ -227,6 +265,9 @@ function load(): DemoDb {
       db.payStatements ??= [];
       db.jarEntries ??= [];
       db.goals ??= [];
+      db.cds ??= [];
+      db.loans ??= [];
+      db.loanPayments ??= [];
       for (const p of db.payPlans) Object.assign(p, { ...DEFAULT_SPLIT, ...p });
       db.family.tax_brackets ??= DEFAULT_TAX_BRACKETS;
       fillMockPins(db);
@@ -300,6 +341,24 @@ export function createDemoApi(): DemoApi {
     return "wrong";
   };
 
+  /** Kids pass a PIN; parents pass nothing (mirrors check_kid_or_parent). */
+  const kidOrParent = (kidId: string, pin?: string): PinStatus => {
+    if (pin === undefined) {
+      requireParent();
+      return "ok";
+    }
+    return checkPin(kidId, pin);
+  };
+  const ledgerBalance = (kidId: string) => db.transactions.filter((t) => t.kid_id === kidId).reduce((sum, t) => sum + t.amount_cents, 0);
+  const rateToday = (kidId: string) =>
+    [...db.rates]
+      .filter((r) => r.kid_id === kidId && r.effective_from <= today())
+      .sort((a, b) => b.effective_from.localeCompare(a.effective_from))[0]?.monthly_rate ?? 0;
+  const txn = (kidId: string, cents: number, note: string) =>
+    db.transactions.push({ id: id("txn"), kid_id: kidId, kind: "adjustment", amount_cents: cents, occurred_on: today(), note, created_at: new Date().toISOString() });
+  const loanOwed = (loan: Loan) => loanStatus(loan, db.loanPayments.filter((lp) => lp.loan_id === loan.id), today()).balanceCents;
+  const dollars = (cents: number) => "$" + (cents / 100).toFixed(2);
+
   const api: DemoApi = {
     kind: "demo",
 
@@ -353,6 +412,9 @@ export function createDemoApi(): DemoApi {
           .sort((a, b) => b.pay_month.localeCompare(a.pay_month)),
         jarEntries: [...db.jarEntries].sort((a, b) => a.occurred_on.localeCompare(b.occurred_on)),
         goals: db.goals,
+        cds: db.cds,
+        loans: db.loans,
+        loanPayments: db.loanPayments,
       });
     },
     async createFamily() {
@@ -400,6 +462,9 @@ export function createDemoApi(): DemoApi {
       db.payStatements = db.payStatements.filter((p) => p.kid_id !== kidId);
       db.jarEntries = db.jarEntries.filter((j) => j.kid_id !== kidId);
       db.goals = db.goals.filter((g) => g.kid_id !== kidId);
+      db.cds = db.cds.filter((c) => c.kid_id !== kidId);
+      db.loans = db.loans.filter((l) => l.kid_id !== kidId);
+      db.loanPayments = db.loanPayments.filter((lp) => lp.kid_id !== kidId);
       delete db.pins[kidId];
       changed();
     },
@@ -623,6 +688,109 @@ export function createDemoApi(): DemoApi {
       db.goals = db.goals.filter((g) => !(g.id === goalId && g.kid_id === kidId));
       changed();
       return "ok";
+    },
+
+    async openCd(kidId, cents, months, pin) {
+      const status = kidOrParent(kidId, pin);
+      if (status !== "ok") return status;
+      if (!kidById(kidId).account_opened_on) throw new ApiError("The account isn't open yet.");
+      if (![3, 6, 12].includes(months)) throw new ApiError("Choose 3, 6 or 12 months.");
+      if (cents <= 0) throw new ApiError("Enter an amount.");
+      const max = ledgerBalance(kidId);
+      if (cents > max) throw new ApiError("You can lock up to " + dollars(max) + " right now.");
+      txn(kidId, -cents, "Locked in a CD");
+      db.cds.push({
+        id: id("cd"),
+        kid_id: kidId,
+        principal_cents: cents,
+        base_monthly_rate: rateToday(kidId),
+        bonus_monthly_rate: db.family.cd_bonus_monthly_rate,
+        term_months: months,
+        opened_on: today(),
+        matures_on: addMonths(today(), months),
+        status: "open",
+        closed_on: null,
+        payout_cents: null,
+      });
+      changed();
+      return status;
+    },
+    async breakCd(kidId, cdId, pin) {
+      const status = kidOrParent(kidId, pin);
+      if (status !== "ok") return status;
+      const cd = db.cds.find((c) => c.id === cdId && c.kid_id === kidId);
+      if (!cd || cd.status !== "open") throw new ApiError("That CD isn't open.");
+      if (today() >= cd.matures_on) throw new ApiError("That CD has matured. It pays out in full.");
+      const payout = grow(cd.principal_cents, cd.base_monthly_rate, fullMonthsBetween(cd.opened_on, today()));
+      txn(kidId, payout, "CD broken early");
+      Object.assign(cd, { status: "broken", closed_on: today(), payout_cents: payout });
+      changed();
+      return status;
+    },
+    async collectCd(cdId) {
+      const cd = db.cds.find((c) => c.id === cdId);
+      if (!cd || cd.status !== "open" || today() < cd.matures_on) return;
+      const payout = cdStatus(cd, today()).maturityCents;
+      txn(cd.kid_id, payout, "CD matured");
+      Object.assign(cd, { status: "matured", closed_on: today(), payout_cents: payout });
+      changed();
+    },
+    async requestLoan(kidId, pin, cents, purpose) {
+      const status = checkPin(kidId, pin);
+      if (status !== "ok") return status;
+      if (cents <= 0) throw new ApiError("Enter an amount.");
+      const open = db.loans.some((l) => l.kid_id === kidId && (l.status === "pending" || (l.status === "active" && loanOwed(l) > 0)));
+      if (open) throw new ApiError("You already have a loan. Pay it off first.");
+      db.loans.push({
+        id: id("loan"),
+        kid_id: kidId,
+        principal_cents: cents,
+        monthly_rate: db.family.loan_monthly_rate,
+        purpose: purpose.trim() || null,
+        status: "pending",
+        started_on: null,
+        created_at: new Date().toISOString(),
+      });
+      changed();
+      return status;
+    },
+    async cancelLoan(kidId, pin, loanId) {
+      const status = checkPin(kidId, pin);
+      if (status !== "ok") return status;
+      const loan = db.loans.find((l) => l.id === loanId && l.kid_id === kidId && l.status === "pending");
+      if (!loan) throw new ApiError("That request isn't waiting anymore.");
+      loan.status = "cancelled";
+      changed();
+      return status;
+    },
+    async decideLoan(loanId, approve) {
+      requireParent();
+      const loan = db.loans.find((l) => l.id === loanId);
+      if (!loan) throw new ApiError("Loan not found.");
+      if (loan.status !== "pending") throw new ApiError("That loan was already " + loan.status + ".");
+      loan.status = approve ? "active" : "denied";
+      loan.started_on = approve ? today() : null;
+      changed();
+    },
+    async payLoan(kidId, loanId, cents, source, pin) {
+      const status = kidOrParent(kidId, pin);
+      if (status !== "ok") return status;
+      const loan = db.loans.find((l) => l.id === loanId && l.kid_id === kidId);
+      if (!loan || loan.status !== "active") throw new ApiError("That loan isn't active.");
+      if (source === "cash" && pin !== undefined) throw new ApiError("Pay from savings or the Spend jar.");
+      if (cents <= 0) throw new ApiError("Enter an amount.");
+      if (cents > loanOwed(loan)) throw new ApiError("That's more than you owe.");
+      if (source === "savings") {
+        if (cents > ledgerBalance(kidId)) throw new ApiError("Your savings don't have that much right now.");
+        txn(kidId, -cents, "Loan payment");
+      } else if (source === "spend") {
+        const bal = db.jarEntries.filter((j) => j.kid_id === kidId && j.jar === "spend").reduce((t, j) => t + j.amount_cents, 0);
+        if (cents > bal) throw new ApiError("There's only " + dollars(bal) + " in the Spend jar.");
+        db.jarEntries.push({ id: id("jar"), kid_id: kidId, jar: "spend", amount_cents: -cents, occurred_on: today(), note: "Loan payment", statement_id: null, created_at: new Date().toISOString() });
+      }
+      db.loanPayments.push({ id: id("lp"), loan_id: loanId, kid_id: kidId, amount_cents: cents, paid_on: today(), source });
+      changed();
+      return status;
     },
   };
   return api;

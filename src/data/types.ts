@@ -93,6 +93,40 @@ export interface JarEntry {
   created_at: string;
 }
 
+export interface Cd {
+  id: string;
+  kid_id: string;
+  principal_cents: number;
+  base_monthly_rate: number;
+  bonus_monthly_rate: number;
+  term_months: number;
+  opened_on: ISODate;
+  matures_on: ISODate;
+  status: "open" | "matured" | "broken";
+  closed_on: ISODate | null;
+  payout_cents: number | null;
+}
+
+export interface Loan {
+  id: string;
+  kid_id: string;
+  principal_cents: number;
+  monthly_rate: number;
+  purpose: string | null;
+  status: "pending" | "active" | "denied" | "cancelled";
+  started_on: ISODate | null;
+  created_at: string;
+}
+
+export interface LoanPaymentRow {
+  id: string;
+  loan_id: string;
+  kid_id: string;
+  amount_cents: number;
+  paid_on: ISODate;
+  source: "savings" | "spend" | "cash";
+}
+
 export interface SavingsGoal {
   id: string;
   kid_id: string;
@@ -137,6 +171,9 @@ export interface FamilyData {
   payStatements: PayStatement[];
   jarEntries: JarEntry[];
   goals: SavingsGoal[];
+  cds: Cd[];
+  loans: Loan[];
+  loanPayments: LoanPaymentRow[];
 }
 
 export type KidTemplate = Pick<Kid, "name" | "avatar" | "mode" | "intro_monthly_rate" | "intro_months" | "ongoing_monthly_rate">;

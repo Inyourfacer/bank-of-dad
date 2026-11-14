@@ -4,13 +4,14 @@ import { LiabilityForecast } from "../components/LiabilityForecast";
 import { RequestReview } from "../components/RequestReview";
 import { useAction, useApp } from "../data/AppContext";
 import { useAccounts } from "../data/useAccounts";
+import { loanStatus } from "../engine/cd";
 import { formatCents, formatMonthYear } from "../lib/format";
 
 const formatDay = (iso: string) =>
   new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
 
 export function FamilyPage() {
-  const { data } = useApp();
+  const { data, today } = useApp();
   const accounts = useAccounts();
   const [adding, setAdding] = useState(false);
   const [run, busy, error] = useAction();
@@ -19,7 +20,13 @@ export function FamilyPage() {
   const all = [...accounts.values()];
   // Savings plus the Spend and Give jars: all of it is owed to the kids.
   const jars = data.jarEntries.reduce((s, j) => s + j.amount_cents, 0);
-  const owed = all.reduce((s, a) => s + a.balanceCents, 0) + jars;
+  // Money locked in CDs is still the kids' (counted at what they put in).
+  const locked = data.cds.filter((c) => c.status === "open").reduce((s, c) => s + c.principal_cents, 0);
+  const owed = all.reduce((s, a) => s + a.balanceCents, 0) + jars + locked;
+  // What the kids owe the Bank of Dad on loans.
+  const loansOwed = data.loans
+    .filter((l) => l.status === "active")
+    .reduce((s, l) => s + loanStatus(l, data.loanPayments.filter((p) => p.loan_id === l.id), today).balanceCents, 0);
   const accruing = all.reduce((s, a) => s + a.accruingCents, 0);
   const paid = all.reduce((s, a) => s + a.interestPaidCents, 0);
   const missingPin = data.kids.filter((k) => !data.kidsWithPin.includes(k.id));
@@ -38,7 +45,7 @@ export function FamilyPage() {
         </a>
       </div>
 
-      <RequestReview requests={data.withdrawalRequests} />
+      <RequestReview requests={data.withdrawalRequests} loans={data.loans} />
 
       <div className="tiles">
         <div className="panel tile">
@@ -47,7 +54,9 @@ export function FamilyPage() {
           <p className="hint">
             across {data.kids.length} account{data.kids.length === 1 ? "" : "s"}
             {jars > 0 ? `, including ${formatCents(jars)} in Spend and Give jars` : ""}
+            {locked > 0 ? ` and ${formatCents(locked)} locked in CDs` : ""}
           </p>
+          {loansOwed > 0 && <p className="hint">The kids owe you {formatCents(loansOwed)} on loans.</p>}
         </div>
         <div className="panel tile">
           <h2>Interest this month</h2>

@@ -2,7 +2,10 @@ import { type SupabaseClient, createClient } from "@supabase/supabase-js";
 import { ApiError, type BankApi } from "./api";
 import { DEFAULT_TAX_BRACKETS } from "../engine/paycheck";
 import type {
+  Cd,
   FamilyData,
+  Loan,
+  LoanPaymentRow,
   JarEntry,
   Kid,
   Member,
@@ -96,7 +99,7 @@ export function createSupabaseApi(): BankApi {
       const me = members.find((m) => m.user_id === auth.user!.id);
       if (!me) return null;
 
-      const [family, kids, rates, transactions, withPin, requests, plans, statements, jars, goals] = await Promise.all([
+      const [family, kids, rates, transactions, withPin, requests, plans, statements, jars, goals, cds, loans, loanPayments] = await Promise.all([
         db.from("families").select("*").single(),
         db.from("kids").select("*").order("created_at"),
         db.from("rate_periods").select("id, kid_id, effective_from, monthly_rate").order("effective_from"),
@@ -115,6 +118,9 @@ export function createSupabaseApi(): BankApi {
           .limit(500),
         db.from("jar_entries").select("id, kid_id, jar, amount_cents, occurred_on, note, statement_id, created_at").order("occurred_on"),
         db.from("savings_goals").select("id, kid_id, name, emoji, target_cents, created_at").order("created_at"),
+        db.from("cds").select("id, kid_id, principal_cents, base_monthly_rate, bonus_monthly_rate, term_months, opened_on, matures_on, status, closed_on, payout_cents").order("opened_on"),
+        db.from("loans").select("id, kid_id, principal_cents, monthly_rate, purpose, status, started_on, created_at").order("created_at"),
+        db.from("loan_payments").select("id, loan_id, kid_id, amount_cents, paid_on, source").order("paid_on"),
       ]);
       const f = check(family) as FamilyData["family"];
       return {
@@ -147,6 +153,15 @@ export function createSupabaseApi(): BankApi {
         })),
         jarEntries: (check(jars) as JarEntry[]).map((j) => ({ ...j, amount_cents: num(j.amount_cents) })),
         goals: (check(goals) as SavingsGoal[]).map((g) => ({ ...g, target_cents: num(g.target_cents) })),
+        cds: (check(cds) as Cd[]).map((c) => ({
+          ...c,
+          principal_cents: num(c.principal_cents),
+          base_monthly_rate: num(c.base_monthly_rate),
+          bonus_monthly_rate: num(c.bonus_monthly_rate),
+          payout_cents: c.payout_cents === null ? null : num(c.payout_cents),
+        })),
+        loans: (check(loans) as Loan[]).map((l) => ({ ...l, principal_cents: num(l.principal_cents), monthly_rate: num(l.monthly_rate) })),
+        loanPayments: (check(loanPayments) as LoanPaymentRow[]).map((p) => ({ ...p, amount_cents: num(p.amount_cents) })),
       };
     },
 
@@ -247,6 +262,34 @@ export function createSupabaseApi(): BankApi {
           p_emoji: goal.emoji,
           p_target_cents: goal.target_cents,
         }),
+      ) as { status: PinStatus };
+      return r.status;
+    },
+    async openCd(kidId, cents, months, pin) {
+      const r = check(await db.rpc("open_cd", { p_kid: kidId, p_pin: pin ?? null, p_cents: cents, p_months: months })) as { status: PinStatus };
+      return r.status;
+    },
+    async breakCd(kidId, cdId, pin) {
+      const r = check(await db.rpc("break_cd", { p_kid: kidId, p_pin: pin ?? null, p_cd: cdId })) as { status: PinStatus };
+      return r.status;
+    },
+    async collectCd(cdId) {
+      check(await db.rpc("collect_cd", { p_cd: cdId }));
+    },
+    async requestLoan(kidId, pin, cents, purpose) {
+      const r = check(await db.rpc("request_loan", { p_kid: kidId, p_pin: pin, p_cents: cents, p_purpose: purpose })) as { status: PinStatus };
+      return r.status;
+    },
+    async cancelLoan(kidId, pin, loanId) {
+      const r = check(await db.rpc("cancel_loan", { p_kid: kidId, p_pin: pin, p_loan: loanId })) as { status: PinStatus };
+      return r.status;
+    },
+    async decideLoan(loanId, approve) {
+      check(await db.rpc("decide_loan", { p_loan: loanId, p_approve: approve }));
+    },
+    async payLoan(kidId, loanId, cents, source, pin) {
+      const r = check(
+        await db.rpc("pay_loan", { p_kid: kidId, p_pin: pin ?? null, p_loan: loanId, p_cents: cents, p_source: source }),
       ) as { status: PinStatus };
       return r.status;
     },

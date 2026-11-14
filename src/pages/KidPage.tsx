@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ErrorMessage, Field } from "../components/Field";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { KidForm } from "../components/KidForm";
+import { CdsPanel, LoanPanel } from "../components/CdsLoans";
 import { JarsAdmin } from "../components/JarsAdmin";
 import { PayPlanPanel } from "../components/PayPlanPanel";
 import { RequestReview } from "../components/RequestReview";
@@ -67,10 +68,15 @@ export function KidPage({ kidId }: { kidId: string }) {
           <RecordMoney kid={kid} account={account} />
           <PayPlanPanel kid={kid} />
           <JarsAdmin kid={kid} savingsCents={account.balanceCents} />
+          <ParentCdsLoans kid={kid} savingsCents={account.balanceCents} />
           <Activity account={account} />
         </div>
         <div className="stack">
-          <RequestReview requests={data.withdrawalRequests.filter((r) => r.kid_id === kid.id)} showKid={false} />
+          <RequestReview
+            requests={data.withdrawalRequests.filter((r) => r.kid_id === kid.id)}
+            loans={data.loans.filter((l) => l.kid_id === kid.id)}
+            showKid={false}
+          />
           <RatesPanel kid={kid} rates={rates} />
           <ProfilePanel kid={kid} hasPin={hasPin} />
           <DangerZone kid={kid} />
@@ -447,5 +453,26 @@ function DangerZone({ kid }: { kid: Kid }) {
         </form>
       )}
     </section>
+  );
+}
+
+/** CDs and loans, acting as a parent (no PIN). */
+function ParentCdsLoans({ kid, savingsCents }: { kid: Kid; savingsCents: number }) {
+  const [cdRun, cdBusy, cdError] = useAction();
+  const [loanRun, loanBusy, loanError] = useAction();
+  const wrap =
+    (run: typeof cdRun) =>
+    (fn: (api: Parameters<Parameters<typeof cdRun>[0]>[0], pin: string | undefined) => Promise<unknown>) =>
+      run(async (api) => {
+        const s = await fn(api, undefined);
+        if (typeof s === "string" && s !== "ok") throw new Error("That didn't work. Try again.");
+      });
+  return (
+    <>
+      {kid.account_opened_on && (
+        <CdsPanel kid={kid} savingsCents={savingsCents} act={wrap(cdRun)} busy={cdBusy} error={cdError} asKid={false} />
+      )}
+      <LoanPanel kid={kid} savingsCents={savingsCents} act={wrap(loanRun)} busy={loanBusy} error={loanError} asKid={false} />
+    </>
   );
 }

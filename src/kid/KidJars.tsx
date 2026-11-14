@@ -9,7 +9,7 @@ import { dollarsToCents, formatCents } from "../lib/format";
 import { useKidSession } from "./KidSession";
 
 /** Runs a kid action with the signed-in kid's PIN; signs out if the PIN stopped working. */
-function useKidAction() {
+export function useKidAction() {
   const { api, refresh } = useApp();
   const { session, signOut } = useKidSession();
   const [busy, setBusy] = useState(false);
