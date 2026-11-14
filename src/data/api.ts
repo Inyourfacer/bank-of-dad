@@ -76,6 +76,17 @@ export interface BankApi {
   /** Parents add goals directly; kids pass their PIN. */
   addGoal(goal: NewGoal, pin?: string): Promise<PinStatus>;
   removeGoal(kidId: string, goalId: string, pin?: string): Promise<PinStatus>;
+
+  /** Lock savings in a CD. Kids pass their PIN; parents pass nothing. */
+  openCd(kidId: string, cents: number, months: number, pin?: string): Promise<PinStatus>;
+  breakCd(kidId: string, cdId: string, pin?: string): Promise<PinStatus>;
+  /** Pay out a matured CD into savings (safe to call more than once). */
+  collectCd(cdId: string): Promise<void>;
+  requestLoan(kidId: string, pin: string, cents: number, purpose: string): Promise<PinStatus>;
+  cancelLoan(kidId: string, pin: string, loanId: string): Promise<PinStatus>;
+  decideLoan(loanId: string, approve: boolean): Promise<void>;
+  /** Kids (PIN) pay from savings or Spend; parents (no PIN) can also record cash. */
+  payLoan(kidId: string, loanId: string, cents: number, source: "savings" | "spend" | "cash", pin?: string): Promise<PinStatus>;
 }
 
 /** What to tell a kid when a PIN check fails. */

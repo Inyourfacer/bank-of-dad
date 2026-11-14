@@ -2,7 +2,8 @@
  * Daily Bank of Dad job (run by .github/workflows/daily.yml):
  *   1. Posts any interest Paydays that are due (catching up missed months).
  *   2. Pays this month's salaries on each kid's payday (pay stub + take-home).
- *   3. Touches the database, so a free Supabase project never pauses.
+ *   3. Pays out CDs that have matured.
+ *   4. Touches the database, so a free Supabase project never pauses.
  *
  * Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (the secret key). The
  * secret key bypasses Row Level Security, so it lives only in GitHub secrets.
@@ -14,6 +15,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { planPaydays } from "../src/data/payday";
 import { planPayroll } from "../src/data/payroll";
+import { todayInZone } from "../src/engine/dates";
 import type { PayPlan } from "../src/data/types";
 import type { TaxBracket } from "../src/engine/paycheck";
 
@@ -47,6 +49,9 @@ async function main() {
     fetchAll<PayPlan>(db, "pay_plans", "kid_id, enabled, salary_cents, pay_day, expenses, save_pct, spend_pct, give_pct"),
     fetchAll<{ kid_id: string; pay_month: string }>(db, "pay_statements", "kid_id, pay_month"),
   ]);
+  const openCds = (
+    await fetchAll<{ id: string; kid_id: string; matures_on: string; status: string }>(db, "cds", "id, kid_id, matures_on, status")
+  ).filter((c) => c.status === "open");
   console.log(`Checked ${families.length} famil${families.length === 1 ? "y" : "ies"}, ${kids.length} kid account(s).`);
 
   const plan = planPaydays({ families, kids, rates: rates as never, transactions: transactions as never });
@@ -109,6 +114,20 @@ async function main() {
     }
   }
   console.log(dryRun ? `Dry run: ${payroll.length} salary payment(s) due.` : `Done: paid ${paid} salary payment(s).`);
+
+  // CDs: pay out any that have matured (in the family's time zone).
+  const tzOf = new Map(kids.map((k) => [k.id, families.find((f) => f.id === k.family_id)?.time_zone ?? "UTC"]));
+  const due = openCds.filter((c) => c.matures_on <= todayInZone(tzOf.get(c.kid_id) ?? "UTC"));
+  for (const c of due) {
+    if (dryRun) {
+      console.log(`Would pay out CD ${c.id} (kid ${c.kid_id})`);
+      continue;
+    }
+    const { error } = await db.rpc("collect_cd", { p_cd: c.id });
+    if (error) throw new Error(`Paying out CD ${c.id}: ${error.message}`);
+    console.log(`Paid out CD ${c.id} (kid ${c.kid_id})`);
+  }
+  console.log(dryRun ? `Dry run: ${due.length} CD(s) matured.` : `Done: paid out ${due.length} CD(s).`);
 }
 
 main().catch((e) => {

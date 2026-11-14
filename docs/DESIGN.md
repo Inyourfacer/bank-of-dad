@@ -191,6 +191,29 @@ leave **$7.20**, inside the $5–$10 target.
   month, assuming the payday Save amount and no withdrawals. When asking to
   take money out, kids see how much later their next goal would be.
 
+## 4d. CDs and loans
+
+**CDs (locked savings).** A kid (or parent) locks money from Savings for 3, 6
+or 12 months. It earns the kid's current rate plus the family's CD bonus
+(default +1%/month), compounded monthly: $20 for 6 months at 1% + 1% pays
+$22.52, against $21.23 in regular savings. At maturity it pays back into
+Savings automatically (when anyone opens the app, or by the daily job).
+Breaking early pays the base rate only for the whole months so far, and the
+button says exactly what's given up ("Get $20.61, lose $0.61 bonus"). The
+amount that can be locked is capped by the ledger, so this month's unpaid
+interest can't be locked yet.
+
+**Loans from Dad.** A kid asks to borrow (one loan at a time) and first sees a
+payoff table (3, 6 or 12 months: monthly payment and total interest) and the
+minimum payment trap (paying only the interest never finishes). A parent
+lends or denies; on lending they hand over the cash. The balance grows at the
+family loan rate (default 3%/month) with the same daily-accrual, month-end
+engine as savings. Kids repay from the Spend jar or Savings (PIN-checked) and
+can try "if I pay $X a month…"; parents can also record cash payments. The
+family dashboard shows what the kids owe.
+
+CDs and loans aren't shown in Junior view.
+
 ## 5. Parent view
 
 - **Family dashboard:** all 5 kids at a glance, pending withdrawal requests,
@@ -360,6 +383,11 @@ pay_statements (id, kid_id, pay_month, paid_on, gross_cents, taxes jsonb,
 jar_entries   (id, kid_id, jar[spend|give], amount_cents, occurred_on, note,
                statement_id)  -- never below zero
 savings_goals (id, kid_id, name, emoji, target_cents)  -- up to 3 per kid
+cds           (id, kid_id, principal_cents, base/bonus_monthly_rate, term_months,
+               opened_on, matures_on, status, payout_cents)
+loans         (id, kid_id, principal_cents, monthly_rate, purpose, status,
+               started_on)
+loan_payments (id, loan_id, amount_cents, paid_on, source[savings|spend|cash])
 withdrawal_requests (id, kid_id, amount_cents, reason,
                status[pending|approved|denied|cancelled], decided_by, decided_at,
                transaction_id)  -- functions only
@@ -370,7 +398,8 @@ Functions: `create_family`, `add_family_member`, `remove_family_member`,
 `kid_sign_in`, `request_withdrawal`, `cancel_withdrawal`, `decide_withdrawal`,
 `apply_family_config` (service role only), `post_paycheck` (parents and the
 daily job; splits Save / Spend / Give), `move_to_savings`, `kid_add_goal`,
-`kid_remove_goal`.
+`kid_remove_goal`, `open_cd`, `break_cd`, `collect_cd`, `request_loan`,
+`cancel_loan`, `decide_loan`, `pay_loan`.
 Every kid action re-checks that kid's PIN on the server, so a sibling holding
 the family device can't act for someone else.
 
@@ -401,4 +430,6 @@ All money is stored as **integer cents**.
 | Family setup | A YAML config in a GitHub secret + a "Set up family" job; the app's own screens still work for later changes |
 | Pay and expenses | Pretend $100 salary minus progressive tax and bills; only the take-home ($5–$10) is deposited |
 | Jars and goals | Take-home split 50/40/10 into Save (interest) / Spend / Give; up to 3 goals with projected dates |
+| CDs | 3/6/12 months at the kid's rate + bonus; breaking early forfeits the bonus |
+| Loans | One at a time at the family loan rate; payoff table and minimum-payment trap shown first |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |
