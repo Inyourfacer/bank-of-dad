@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { ConfirmButton } from "../components/ConfirmButton";
 import { ErrorMessage, Field } from "../components/Field";
+import { FamilyRateChange } from "../components/FamilyRateChange";
 import { TaxBracketsPanel } from "../components/TaxBracketsPanel";
 import { loginEmail } from "../lib/login";
 import { useAction, useApp } from "../data/AppContext";
@@ -21,6 +22,7 @@ export function FamilySettingsPage() {
       <h1 className="page-title">Family settings</h1>
       <BankSettings key={JSON.stringify(data.family)} />
       <TaxBracketsPanel />
+      <FamilyRateChange />
       <Members />
       <ChangePassword />
     </div>

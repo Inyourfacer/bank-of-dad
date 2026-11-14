@@ -12,6 +12,7 @@ import {
 } from "../lib/format";
 import { RateComparison, planRates } from "../components/RateComparison";
 import { GrowthChart } from "./GrowthChart";
+import { StartLaterPanel } from "./StartLaterPanel";
 import { type SimSettings, useSimulation } from "./useSimulation";
 
 interface Form {
@@ -254,6 +255,8 @@ export function Simulator() {
             )}
           </div>
         </div>
+
+        <StartLaterPanel settings={settings} />
 
         <details className="panel paydays">
           <summary>See every Payday ({scenario.paydays.length})</summary>

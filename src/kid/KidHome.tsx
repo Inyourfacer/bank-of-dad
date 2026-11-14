@@ -4,6 +4,7 @@ import type { Kid } from "../data/types";
 import { formatCents, formatPercent } from "../lib/format";
 import { type Act, CdsPanel, LoanPanel } from "../components/CdsLoans";
 import { KidGoals, KidJars, useKidAction } from "./KidJars";
+import { KidLessons, NewLessonBanner, RateAnnouncement } from "./KidLessons";
 import { KidPay } from "./KidPay";
 import { kidDadRates } from "./kidRates";
 import { KidBar, PaydayNote, RecentActivity, RequestList, WelcomeBanner } from "./parts";
@@ -28,6 +29,8 @@ export function KidHome({ kid }: { kid: Kid }) {
     <div className="stack-lg">
       <KidBar kid={kid} />
       <WelcomeBanner kid={kid} rateText={dad[0] ? `${formatPercent(dad[0].monthly)} every month` : "interest every month"} />
+      <RateAnnouncement kid={kid} />
+      <NewLessonBanner kid={kid} onOpen={() => document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
 
       <section className="panel hero" aria-label="Your money">
         <p className="eyebrow">Your balance</p>
@@ -53,6 +56,7 @@ export function KidHome({ kid }: { kid: Kid }) {
           <KidJars kid={kid} savingsCents={d.account.balanceCents} />
           <KidGoals kid={kid} />
           <WhatIfPanel kid={kid} rates={d.rates} transactions={d.transactions} today={d.today} bankApy={d.bankApy} />
+          <KidLessons kid={kid} />
         </div>
         <div className="stack">
           <RequestList kid={kid} requests={d.requests} />

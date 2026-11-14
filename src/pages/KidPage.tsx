@@ -253,6 +253,7 @@ function RatesPanel({ kid, rates }: { kid: Kid; rates: RatePeriodRow[] }) {
   const [run, busy, error] = useAction();
   const [from, setFrom] = useState(firstOfNextMonth(today));
   const [rate, setRate] = useState("");
+  const [message, setMessage] = useState("");
 
   const rows = (
     <tbody>
@@ -334,7 +335,10 @@ function RatesPanel({ kid, rates }: { kid: Kid; rates: RatePeriodRow[] }) {
         className="stack"
         onSubmit={async (e) => {
           e.preventDefault();
-          if (await run((api) => api.addRatePeriod(kid.id, from, rateFraction))) setRate("");
+          if (await run((api) => api.addRatePeriod(kid.id, from, rateFraction, message))) {
+            setRate("");
+            setMessage("");
+          }
         }}
       >
         <h3 className="sub-title">Change the rate</h3>
@@ -348,6 +352,15 @@ function RatesPanel({ kid, rates }: { kid: Kid; rates: RatePeriodRow[] }) {
             hint={rate.trim() ? `≈ ${formatPercent(annualFromMonthlyRate(rateFraction), 1)} a year` : undefined}
           />
         </div>
+        <Field
+          label={`Message to ${kid.name} (optional)`}
+          inputMode="text"
+          value={message}
+          onChange={setMessage}
+          maxLength={280}
+          placeholder="Great saving this year! Your rate goes up in January."
+          hint={`${kid.name} sees this as an announcement before the change.`}
+        />
         <ErrorMessage error={error} />
         <button className="btn btn-secondary" disabled={busy || !valid}>
           Schedule change

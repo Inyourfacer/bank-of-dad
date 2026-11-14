@@ -102,7 +102,7 @@ export function createSupabaseApi(): BankApi {
       const [family, kids, rates, transactions, withPin, requests, plans, statements, jars, goals, cds, loans, loanPayments] = await Promise.all([
         db.from("families").select("*").single(),
         db.from("kids").select("*").order("created_at"),
-        db.from("rate_periods").select("id, kid_id, effective_from, monthly_rate").order("effective_from"),
+        db.from("rate_periods").select("id, kid_id, effective_from, monthly_rate, message").order("effective_from"),
         db.from("transactions").select("id, kid_id, kind, amount_cents, occurred_on, note, created_at").order("occurred_on"),
         db.rpc("kids_with_pin"),
         db
@@ -197,8 +197,12 @@ export function createSupabaseApi(): BankApi {
     async deleteTransaction(id) {
       check(await db.from("transactions").delete().eq("id", id));
     },
-    async addRatePeriod(kidId, effectiveFrom, monthlyRate) {
-      check(await db.from("rate_periods").insert({ kid_id: kidId, effective_from: effectiveFrom, monthly_rate: monthlyRate }));
+    async addRatePeriod(kidId, effectiveFrom, monthlyRate, message) {
+      check(
+        await db
+          .from("rate_periods")
+          .insert({ kid_id: kidId, effective_from: effectiveFrom, monthly_rate: monthlyRate, message: message?.trim() || null }),
+      );
     },
     async deleteRatePeriod(id) {
       check(await db.from("rate_periods").delete().eq("id", id));

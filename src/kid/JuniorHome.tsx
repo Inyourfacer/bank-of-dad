@@ -4,6 +4,7 @@ import type { Kid } from "../data/types";
 import { formatCents } from "../lib/format";
 import { KidBar, PaydayNote, RequestList, WelcomeBanner } from "./parts";
 import { KidGoals, KidJars } from "./KidJars";
+import { KidLessons, NewLessonBanner, RateAnnouncement } from "./KidLessons";
 import { JuniorPay } from "./KidPay";
 import { SavingsJar } from "./SavingsJar";
 import { useKidData } from "./useKidData";
@@ -36,6 +37,8 @@ export function JuniorHome({ kid }: { kid: Kid }) {
     <div className="stack-lg junior">
       <KidBar kid={kid} />
       <WelcomeBanner kid={kid} rateText={dad[0] ? `${Math.round(dad[0].monthly * 100)}¢ for every dollar, every month` : "interest every month"} />
+      <RateAnnouncement kid={kid} />
+      <NewLessonBanner kid={kid} onOpen={() => document.getElementById("lessons")?.scrollIntoView({ behavior: "smooth", block: "start" })} />
 
       <section className="panel junior-hero" aria-label="Your money">
         <SavingsJar putInCents={d.account.contributedCents} interestCents={d.account.balanceCents - d.account.contributedCents} />
@@ -70,6 +73,8 @@ export function JuniorHome({ kid }: { kid: Kid }) {
       </section>
 
       <RequestList kid={kid} requests={d.requests} />
+
+      <KidLessons kid={kid} />
 
       {withdrawing ? (
         <WithdrawPanel kid={kid} rates={d.rates} availableCents={d.availableCents} simple onClose={() => setWithdrawing(false)} />

@@ -37,6 +37,7 @@ say "Success. No rows returned".
 4. [`supabase/migrations/20261111000000_pay_and_expenses.sql`](../supabase/migrations/20261111000000_pay_and_expenses.sql)
 5. [`supabase/migrations/20261114000000_jars_and_goals.sql`](../supabase/migrations/20261114000000_jars_and_goals.sql)
 6. [`supabase/migrations/20261115000000_cds_and_loans.sql`](../supabase/migrations/20261115000000_cds_and_loans.sql)
+7. [`supabase/migrations/20261116000000_rate_announcements.sql`](../supabase/migrations/20261116000000_rate_announcements.sql)
 
 Already ran some of them earlier? Just run the ones you haven't, oldest first.
 
