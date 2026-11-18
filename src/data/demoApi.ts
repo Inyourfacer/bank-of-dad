@@ -4,7 +4,7 @@
  * keeps its data in sessionStorage so a reload doesn't wipe it.
  */
 
-import { type ISODate, addDays, addMonths, startOfMonth, todayInZone } from "../engine/dates";
+import { type ISODate, addDays, addMonths, firstOfNextMonth, startOfMonth, todayInZone } from "../engine/dates";
 import { cdStatus, fullMonthsBetween, grow, loanStatus } from "../engine/cd";
 import { DEFAULT_EXPENSES, DEFAULT_SPLIT, DEFAULT_TAX_BRACKETS, type Expense, splitTakeHome } from "../engine/paycheck";
 import { ApiError, type BankApi, type SessionUser } from "./api";
@@ -99,6 +99,14 @@ function seed(): DemoDb {
 
   const rates: RatePeriodRow[] = [];
   for (const k of kids) if (k.account_opened_on) rates.push(...openingRates(k, k.account_opened_on));
+  // An announced rate change for Ava next month.
+  rates.push({
+    id: id("rate"),
+    kid_id: kids[0].id,
+    effective_from: firstOfNextMonth(today),
+    monthly_rate: 0.0125,
+    message: "Great saving this year, Ava! Your rate goes up next month.",
+  });
 
   const t = (k: Kid, daysAgo: number, cents: number, kind: TransactionRow["kind"], note: string | null): TransactionRow => ({
     id: id("txn"),
@@ -498,14 +506,15 @@ export function createDemoApi(): DemoApi {
       db.jarEntries = db.jarEntries.filter((j) => !j.statement_id || !gone.includes(j.statement_id));
       changed();
     },
-    async addRatePeriod(kidId, effectiveFrom, monthlyRate) {
+    async addRatePeriod(kidId, effectiveFrom, monthlyRate, message) {
       requireParent();
       if (!kidById(kidId).account_opened_on) throw new ApiError("This account isn't open yet. Edit the starting rates instead.");
       if (effectiveFrom < today()) throw new ApiError("Rate changes can only start today or later.");
       if (db.rates.some((r) => r.kid_id === kidId && r.effective_from === effectiveFrom)) {
         throw new ApiError("There's already a rate change on that date.");
       }
-      db.rates.push({ id: id("rate"), kid_id: kidId, effective_from: effectiveFrom, monthly_rate: monthlyRate });
+      if (message && message.length > 280) throw new ApiError("Keep the message under 280 characters.");
+      db.rates.push({ id: id("rate"), kid_id: kidId, effective_from: effectiveFrom, monthly_rate: monthlyRate, message: message?.trim() || null });
       changed();
     },
     async deleteRatePeriod(rateId) {

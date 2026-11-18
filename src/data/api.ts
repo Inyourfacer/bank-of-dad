@@ -52,7 +52,7 @@ export interface BankApi {
 
   addTransaction(t: NewTransaction): Promise<void>;
   deleteTransaction(id: string): Promise<void>;
-  addRatePeriod(kidId: string, effectiveFrom: string, monthlyRate: number): Promise<void>;
+  addRatePeriod(kidId: string, effectiveFrom: string, monthlyRate: number, message?: string | null): Promise<void>;
   deleteRatePeriod(id: string): Promise<void>;
 
   /** Kid signs in on the family device; the first success opens the account. */

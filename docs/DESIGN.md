@@ -214,6 +214,29 @@ family dashboard shows what the kids owe.
 
 CDs and loans aren't shown in Junior view.
 
+## 4e. Lessons, rate announcements, start now vs. later
+
+**Lessons that unlock.** Ten short lessons (`src/lessons/lessons.ts`), each
+unlocked by something that happened to the kid and written with the kid's
+own numbers: What is interest? (first Payday), Interest on interest (3
+Paydays: $100 for 5 years, simple vs. compound), the Rule of 72 ($1 of
+interest, at their rate), Why taxes? and Needs vs. wants (first pay stub),
+Save/spend/give (first jar money), Saving for something (first goal), Why lock
+money up? (first CD), When interest works against you (first loan request),
+and Rates change (a rate change). Locked lessons say how to unlock them; a
+banner announces new ones. Which lessons a kid has opened is remembered on the
+device only.
+
+**Rate-change announcements.** A rate change can carry a message from the
+parent. Kids see a banner before it starts and for two weeks after ("On Dec 1
+your rate goes up from 1% to 1.25% a month. 'Great saving this year!'"), and
+when the starter rate ends. Family settings → **Change everyone's rate**
+schedules the same change for every open account and flags kids who already
+have a change on that date.
+
+**Start now vs. later (simulator).** The same plan begun N years later and
+ending on the same date, on one chart, with what waiting costs.
+
 ## 5. Parent view
 
 - **Family dashboard:** all 5 kids at a glance, pending withdrawal requests,
@@ -370,7 +393,7 @@ kids          (id, family_id, name, avatar, mode[junior|standard],
                intro_monthly_rate, intro_months, ongoing_monthly_rate,  -- rate template
                account_opened_on null)                                  -- set on first login
 kid_pins      (kid_id, pin_hash, failed_attempts, locked_until)         -- functions only
-rate_periods  (id, kid_id, effective_from, monthly_rate)                -- created on open
+rate_periods  (id, kid_id, effective_from, monthly_rate, message)       -- created on open
 transactions  (id, kid_id, kind[deposit|withdrawal|interest|adjustment],
                amount_cents, occurred_on, note,
                period_month null,  -- interest only; unique(kid_id, period_month)
@@ -432,4 +455,5 @@ All money is stored as **integer cents**.
 | Jars and goals | Take-home split 50/40/10 into Save (interest) / Spend / Give; up to 3 goals with projected dates |
 | CDs | 3/6/12 months at the kid's rate + bonus; breaking early forfeits the bonus |
 | Loans | One at a time at the family loan rate; payoff table and minimum-payment trap shown first |
+| Lessons | Ten, unlocked by events, using the kid's numbers; read state kept on the device |
 | Parent sign-in | Email + password, because Supabase's free built-in email only reaches team members; emailed codes are optional with free Gmail SMTP |

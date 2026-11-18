@@ -1799,3 +1799,107 @@ table th {
 .payoff-try p {
   margin: 0;
 }
+
+/* ---------- Announcements and lessons ---------- */
+.announcement {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 20px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--series-putin) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--series-putin) 40%, var(--border));
+}
+.announcement p {
+  margin: 4px 0 0;
+}
+.announcement-msg {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.new-lesson {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.new-lesson > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.new-lesson-go {
+  font-weight: 650;
+  white-space: nowrap;
+}
+.lessons {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lesson {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.lesson.locked {
+  background: var(--surface-2);
+  color: var(--text-secondary);
+}
+.lesson-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+button.lesson-head {
+  cursor: pointer;
+}
+.lesson-emoji {
+  font-size: 1.3rem;
+  flex: none;
+}
+.lesson-title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+.lesson-body {
+  padding: 0 14px 12px 44px;
+}
+.lesson-body p {
+  margin: 0 0 8px;
+}
+.later-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.later-compare > div {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: center;
+}
+.later-compare .tile-number {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+}
+.chart-canvas.small {
+  height: 240px;
+}

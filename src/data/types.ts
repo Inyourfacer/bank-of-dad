@@ -40,6 +40,8 @@ export interface RatePeriodRow {
   kid_id: string;
   effective_from: ISODate;
   monthly_rate: number;
+  /** Optional announcement from a parent ("Your rate goes up in January!"). */
+  message?: string | null;
 }
 
 export interface TransactionRow {
